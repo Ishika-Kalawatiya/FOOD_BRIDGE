@@ -149,10 +149,11 @@ export async function apiCall(path, { method = "GET", body, userId = "usr_101" }
 
     return data;
   } catch (err) {
-    // If backend returns an explicit 409 Conflict or 400 Bad Request, re-throw!
-    if (err.status) throw err;
+    const canUseLocalFallback = !err.status ||
+      (method === "GET" && [404, 500].includes(err.status));
+    if (!canUseLocalFallback) throw err;
 
-    // Otherwise, perform simulated local mock handling
+    // Keep reads available when the API is offline or unavailable.
     return handleLocalMockApi(path, method, body, userId);
   }
 }

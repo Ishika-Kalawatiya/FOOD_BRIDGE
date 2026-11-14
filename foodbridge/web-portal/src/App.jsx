@@ -7,6 +7,10 @@ import { AuthModal } from "./components/AuthModal";
 import { calculateExpiryMetrics } from "./hooks/useCountdown";
 import { apiCall, getCurrentUser } from "./services/api";
 import { Truck, Building2, AlertTriangle, Layers, Clock, Sparkles } from "lucide-react";
+import {
+  createFallbackDeliveryListing,
+  DeliveryTrackingPage,
+} from "../../maps/src/components/DeliveryTrackingPage";
 
 export function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -27,6 +31,18 @@ export function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState("info");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [route, setRoute] = useState(() => ({
+    pathname: window.location.pathname,
+    state: window.history.state,
+  }));
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoute({ pathname: window.location.pathname, state: window.history.state });
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const triggerToast = useCallback((msg, type = "info") => {
     setToastMessage(msg);
@@ -85,6 +101,8 @@ export function App() {
 
   // Real-time client logic: Background data re-fetch every 60 seconds
   useEffect(() => {
+    if (/^\/delivery-tracking\/[^/]+\/?$/.test(route.pathname)) return undefined;
+
     fetchData();
 
     const interval = setInterval(() => {
@@ -92,7 +110,7 @@ export function App() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, route.pathname]);
 
   // Donor post action
   const handlePostListing = async (formData) => {
@@ -117,20 +135,48 @@ export function App() {
       return;
     }
     try {
-      await apiCall(`/api/listings/${id}/${act}`, {
+      const actionResult = await apiCall(`/api/listings/${id}/${act}`, {
         method: "POST",
         userId: currentUser.id,
       });
+      if (act === "claim") {
+        const listing = listings.find((item) => String(item.id) === String(id)) ||
+          (actionResult && String(actionResult.id) === String(id)
+            ? actionResult
+            : createFallbackDeliveryListing(id));
+        const claimedListing = { ...listing, status: "claimed" };
+        setListings((currentListings) => [
+          claimedListing,
+          ...currentListings.filter((item) => String(item.id) !== String(id)),
+        ]);
+        openTracking(claimedListing);
+      }
       triggerToast(
         act === "claim"
-          ? "Pickup claimed! Moved to My Active Pickups."
+          ? "Pickup claimed! Opening live delivery tracking."
           : act === "collect"
           ? "Marked as collected from donor!"
           : "Distribute confirmed! Rescue complete.",
         "success"
       );
-      await fetchData();
+      if (act !== "claim") await fetchData();
     } catch (err) {
+      if (act === "claim" && (err.status == null || [404, 500].includes(err.status))) {
+        const listing = listings.find((item) => String(item.id) === String(id));
+        const claimedListing = {
+          ...(listing || createFallbackDeliveryListing(id)),
+          status: "claimed",
+          volunteer_id: currentUser.id,
+          volunteer_name: currentUser.name || "Volunteer Courier",
+        };
+        setListings((currentListings) => [
+          claimedListing,
+          ...currentListings.filter((item) => String(item.id) !== String(id)),
+        ]);
+        openTracking(claimedListing);
+        triggerToast("Delivery accepted locally. Live tracking is ready.", "success");
+        return;
+      }
       await fetchData();
       throw err;
     }
@@ -148,6 +194,26 @@ export function App() {
   const myClaimedListings = listings.filter((l) => l.status === "claimed");
   const collectedListings = listings.filter((l) => l.status === "collected");
   const distributedListings = listings.filter((l) => l.status === "distributed");
+  const trackingMatch = route.pathname.match(/^\/delivery-tracking\/([^/]+)\/?$/);
+  const trackingId = trackingMatch ? decodeURIComponent(trackingMatch[1]) : null;
+  const trackingListing = trackingId
+    ? listings.find((listing) => String(listing.id) === trackingId) ??
+      (String(route.state?.deliveryListing?.id) === trackingId
+        ? route.state.deliveryListing
+        : createFallbackDeliveryListing(trackingId))
+    : null;
+
+  const openTracking = (listing) => {
+    const path = `/delivery-tracking/${encodeURIComponent(listing.id)}`;
+    const state = { deliveryListing: listing };
+    window.history.pushState(state, "", path);
+    setRoute({ pathname: path, state });
+  };
+
+  const returnToBoard = () => {
+    window.history.pushState({}, "", "/");
+    setRoute({ pathname: "/", state: null });
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -191,6 +257,31 @@ export function App() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        {trackingId ? (
+          trackingListing ? (
+            <DeliveryTrackingPage
+              key={trackingId}
+              listing={trackingListing}
+              routeState={route.state}
+              onAction={handleListingAction}
+              onBack={returnToBoard}
+              toast={triggerToast}
+            />
+          ) : isRefreshing ? (
+            <div className="glass-card rounded-2xl p-10 text-center text-sm text-slate-300">
+              Loading delivery details...
+            </div>
+          ) : (
+            <section className="glass-card rounded-2xl p-10 text-center">
+              <h1 className="text-lg font-bold text-white">Delivery not found</h1>
+              <p className="mt-2 text-sm text-slate-400">This delivery may no longer be available.</p>
+              <button onClick={returnToBoard} className="mt-5 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-slate-950">
+                Return to rescue board
+              </button>
+            </section>
+          )
+        ) : (
+          <>
         
         {/* Guest Email Authentication Prompt Banner */}
         {!currentUser && (
@@ -336,6 +427,7 @@ export function App() {
                     activeRole={activeRole}
                     currentUser={currentUser}
                     onAction={handleListingAction}
+                    onTrack={openTracking}
                     toast={triggerToast}
                   />
                 ))}
@@ -371,6 +463,7 @@ export function App() {
                     activeRole={activeRole}
                     currentUser={currentUser}
                     onAction={handleListingAction}
+                    onTrack={openTracking}
                     toast={triggerToast}
                   />
                 ))}
@@ -406,6 +499,7 @@ export function App() {
                     activeRole={activeRole}
                     currentUser={currentUser}
                     onAction={handleListingAction}
+                    onTrack={openTracking}
                     toast={triggerToast}
                   />
                 ))}
@@ -432,6 +526,8 @@ export function App() {
           </section>
         )}
 
+          </>
+        )}
       </main>
 
       {/* Footer */}

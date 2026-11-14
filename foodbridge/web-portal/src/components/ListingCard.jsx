@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useCountdown } from "../hooks/useCountdown";
-import { MapPin, Clock, Truck, Building2, Utensils, AlertTriangle, CheckCircle } from "lucide-react";
+import { MapPin, Clock, Truck, Building2, Utensils, AlertTriangle, CheckCircle, Navigation } from "lucide-react";
 
-export function ListingCard({ listing, activeRole, currentUser, onAction, toast }) {
+export function ListingCard({ listing, activeRole, currentUser, onAction, onTrack, toast }) {
   const [loading, setLoading] = useState(false);
   const countdown = useCountdown(listing.expires_at);
 
@@ -139,6 +139,14 @@ export function ListingCard({ listing, activeRole, currentUser, onAction, toast 
 
       {/* Bottom: Action Button */}
       {renderActionButton()}
+      <button
+        type="button"
+        onClick={() => onTrack(listing)}
+        className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5"
+      >
+        <Navigation className="w-3.5 h-3.5" />
+        <span>Track Delivery</span>
+      </button>
     </article>
   );
 }
