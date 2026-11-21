@@ -672,6 +672,247 @@
     }
 
     /* ==========================================================================
+       4B. PROFESSIONAL TABBED ACTION DROPDOWN
+       ========================================================================== */
+    .nav-dropdown-wrapper {
+      position: relative;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .nav-action-trigger-btn {
+      transition: all var(--transition-fast);
+      user-select: none;
+    }
+
+    .nav-action-trigger-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-action-trigger-btn.active {
+      background: var(--primary) !important;
+      color: #FFFFFF !important;
+    }
+    .nav-action-trigger-btn.active .dropdown-chevron {
+      transform: rotate(180deg);
+      color: #FFFFFF;
+    }
+    .nav-action-trigger-btn.active #nav-action-role-pill {
+      background: rgba(255, 255, 255, 0.25);
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .nav-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 14px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 490px;
+      max-width: calc(100vw - 32px);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 48px rgba(15, 23, 42, 0.16), 0 2px 10px rgba(0,0,0,0.06);
+      padding: 1.25rem;
+      z-index: 1000;
+      animation: dropdownSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+
+    @keyframes dropdownSlide {
+      from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .nav-dropdown-menu::before {
+      content: '';
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 13px;
+      height: 13px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .action-dropdown-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .action-tabs-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.35rem;
+      background: var(--bg-subtle);
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+    }
+
+    .action-tab-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      padding: 0.55rem 0.3rem;
+      border: none;
+      background: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .action-tab-btn .tab-icon {
+      font-size: 1.2rem;
+    }
+
+    .action-tab-btn:hover {
+      color: var(--text-dark);
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .action-tab-btn.active {
+      background: var(--bg-surface);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .action-tab-pane {
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .action-tab-pane.active {
+      display: block;
+    }
+
+    .action-pane-card {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.15rem;
+      text-align: left;
+    }
+
+    .action-pane-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .action-pane-desc {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 1.1rem;
+    }
+
+    .action-pane-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .action-dropdown-footer {
+      margin-top: 0.9rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Floating Toast System */
+    .landing-toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      pointer-events: none;
+    }
+
+    .landing-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1.35rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      max-width: 420px;
+      animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .landing-toast.toast-success { border-left: 5px solid var(--primary); }
+    .landing-toast.toast-info { border-left: 5px solid var(--accent-mango); }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @media (max-width: 768px) {
+      .nav-dropdown-menu {
+        position: fixed;
+        top: 80px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        transform: none;
+      }
+      .nav-dropdown-menu::before {
+        display: none;
+      }
+      .action-tabs-nav {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* ==========================================================================
        5. HERO SECTION
        ========================================================================== */
     .hero-section {
@@ -1807,15 +2048,18 @@
       <div>
         <div class="side-panel-section-title">⚡ Operational Workflows</div>
         <div class="side-panel-btn-group">
-          <button onclick="launchPortalWithRole('donor'); closeSidePanel();" class="btn btn-primary side-panel-btn" style="background:#059669; border-color:#059669;">
+          <a href="portal.html" class="btn btn-primary side-panel-btn" style="background:#059669; border-color:#059669;">
+            <span>🚀 Multi-Role Rescue App</span>
+          </a>
+          <a href="donate.html" class="btn btn-secondary side-panel-btn">
             <span>👨‍🍳 Donate Surplus Food</span>
-          </button>
-          <button onclick="launchPortalWithRole('volunteer'); closeSidePanel();" class="btn btn-accent side-panel-btn">
+          </a>
+          <a href="courier.html" class="btn btn-accent side-panel-btn">
             <span>🚴 Volunteer Courier</span>
-          </button>
-          <button onclick="launchPortalWithRole('ngo'); closeSidePanel();" class="btn btn-secondary side-panel-btn">
+          </a>
+          <a href="ngo-hub.html" class="btn btn-secondary side-panel-btn">
             <span>🏢 NGO Shelter Hub</span>
-          </button>
+          </a>
         </div>
       </div>
 
@@ -1973,21 +2217,155 @@
 
       <nav>
         <ul class="nav-links" id="nav-links">
-          <li><a href="#home" class="nav-link">Home</a></li>
-          <li><a href="#problem" class="nav-link">The Problem</a></li>
-          <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
-          <li><a href="#impact" class="nav-link">Impact</a></li>
-          <li><a href="#get-involved" class="nav-link">Get Involved</a></li>
+          <li><a href="index.html#home" class="nav-link" aria-current="page">Home</a></li>
+          <li><a href="index.html#problem" class="nav-link">The Problem</a></li>
+          <li><a href="index.html#how-it-works" class="nav-link">How It Works</a></li>
+          <li><a href="index.html#impact" class="nav-link">Impact</a></li>
+          <!-- Take Action (Only visible after registration / authentication) -->
+          <li class="nav-dropdown-wrapper" id="nav-action-wrapper" style="display:none;">
+            <button class="nav-link nav-action-trigger-btn" id="nav-action-toggle" onclick="toggleActionDropdown(event)" aria-expanded="false" style="background:var(--primary-alpha); border:1.5px solid var(--primary); cursor:pointer; display:inline-flex; align-items:center; gap:0.45rem; padding:0.4rem 0.95rem; border-radius:var(--radius-full); font-weight:700; color:var(--primary);">
+              <span class="pulse-dot"></span>
+              <span>Take Action</span>
+              <span id="nav-action-role-pill" class="badge badge-primary" style="font-size:0.68rem; padding:0.12rem 0.5rem; text-transform:uppercase;">Donor</span>
+              <span class="dropdown-chevron" id="nav-dropdown-chevron" style="font-size:0.7rem; transition:transform 0.25s ease;">▼</span>
+            </button>
+
+            <!-- Professional Tabbed Dropdown Panel -->
+            <div class="nav-dropdown-menu" id="nav-action-menu" style="display:none;" onclick="event.stopPropagation()">
+              <div class="action-dropdown-header">
+                <div>
+                  <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:800; color:var(--primary);">⚡ Rescue Operations Hub</div>
+                  <h4 style="font-size:1.1rem; margin-top:0.15rem; color:var(--text-dark);">Choose Workflow Tab</h4>
+                </div>
+                <button onclick="closeActionDropdown()" class="btn-icon" style="width:30px; height:30px; border:none; background:var(--bg-subtle); cursor:pointer; border-radius:50%; font-size:1.1rem; color:var(--text-muted); display:flex; align-items:center; justify-content:center;" aria-label="Close Dropdown">&times;</button>
+              </div>
+
+              <!-- Tabs Navigation -->
+              <div class="action-tabs-nav" role="tablist">
+                <button class="action-tab-btn active" id="tab-btn-donor" onclick="switchActionHubTab('donor')" role="tab" aria-selected="true">
+                  <span class="tab-icon">👨‍🍳</span>
+                  <span>Donor</span>
+                </button>
+                <button class="action-tab-btn" id="tab-btn-courier" onclick="switchActionHubTab('courier')" role="tab" aria-selected="false">
+                  <span class="tab-icon">🚴</span>
+                  <span>Courier</span>
+                </button>
+                <button class="action-tab-btn" id="tab-btn-ngo" onclick="switchActionHubTab('ngo')" role="tab" aria-selected="false">
+                  <span class="tab-icon">🏢</span>
+                  <span>NGO Hub</span>
+                </button>
+                <button class="action-tab-btn" id="tab-btn-portal" onclick="switchActionHubTab('portal')" role="tab" aria-selected="false">
+                  <span class="tab-icon">🚀</span>
+                  <span>Full App</span>
+                </button>
+              </div>
+
+              <!-- Tab Pane 1: Donor -->
+              <div class="action-tab-pane active" id="pane-donor">
+                <div class="action-pane-card">
+                  <div class="action-pane-title">
+                    <span>👨‍🍳 Donate Surplus Food</span>
+                    <span class="badge badge-primary">Donor Flow</span>
+                  </div>
+                  <p class="action-pane-desc">
+                    Quickly post surplus batches from college canteens, restaurants, or event buffets. Includes live freshness timers and instant 80G CSR tax deduction receipts.
+                  </p>
+                  <div class="action-pane-links">
+                    <a href="donate.html" class="btn btn-primary btn-sm" style="width:100%; justify-content:center;">
+                      👨‍🍳 Open Donor Portal (Post Surplus) ➔
+                    </a>
+                    <a href="portal.html#/donor" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
+                      📊 View Donor Analytics &amp; Volume Charts
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Pane 2: Courier -->
+              <div class="action-tab-pane" id="pane-courier">
+                <div class="action-pane-card">
+                  <div class="action-pane-title">
+                    <span>🚴 Volunteer Courier</span>
+                    <span class="badge badge-mustard">Logistics Flow</span>
+                  </div>
+                  <p class="action-pane-desc">
+                    Find and claim time-critical surplus food pickups in your zone. Review thermal packaging safety checklist and deliver meals to local shelters.
+                  </p>
+                  <div class="action-pane-links">
+                    <a href="courier.html" class="btn btn-accent btn-sm" style="width:100%; justify-content:center;">
+                      🚴 Open Courier Dispatch Board ➔
+                    </a>
+                    <a href="portal.html#/volunteer" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
+                      🏆 Volunteer Leaderboard &amp; Badges
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Pane 3: NGO Shelter -->
+              <div class="action-tab-pane" id="pane-ngo">
+                <div class="action-pane-card">
+                  <div class="action-pane-title">
+                    <span>🏢 NGO Shelter Hub</span>
+                    <span class="badge" style="background:rgba(6,182,212,0.15); color:#0891B2; border:1px solid rgba(6,182,212,0.3);">Community Hub</span>
+                  </div>
+                  <p class="action-pane-desc">
+                    Publish your shelter's standing daily meal requirements, coordinate incoming batches with couriers, and log verified beneficiary nutrition counts.
+                  </p>
+                  <div class="action-pane-links">
+                    <a href="ngo-hub.html" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center; border-color:var(--primary); color:var(--primary);">
+                      🏢 Open NGO Shelter Intake Hub ➔
+                    </a>
+                    <a href="portal.html#/receiver" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
+                      🗺️ Interactive Rescue Map &amp; Claims Tracker
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Pane 4: Full App / Operations -->
+              <div class="action-tab-pane" id="pane-portal">
+                <div class="action-pane-card">
+                  <div class="action-pane-title">
+                    <span>🚀 Multi-Role Command Center</span>
+                    <span class="badge badge-tomato">Operations</span>
+                  </div>
+                  <p class="action-pane-desc">
+                    Access the complete multi-view web app with role-based routing, real-time map clustering, live admin controls, and verified climate impact ESG certificates.
+                  </p>
+                  <div class="action-pane-links">
+                    <a href="portal.html" class="btn btn-primary btn-sm" style="width:100%; justify-content:center; background:#E8643C; border-color:#E8643C;">
+                      🚀 Launch Full Web App ➔
+                    </a>
+                    <a href="portal.html#/impact" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
+                      📄 Generate Verified Climate Certificate
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-dropdown-footer">
+                <span>Signed in as <strong id="action-dropdown-user-name">Alex</strong></span>
+                <button onclick="closeActionDropdown(); openProfileModal();" style="background:none; border:none; font-size:0.8rem; font-weight:700; color:var(--primary); cursor:pointer;">Manage Profile ➔</button>
+              </div>
+            </div>
+          </li>
         </ul>
       </nav>
 
       <div class="nav-actions">
+        <!-- Guest Register Button (Visible when NOT registered) -->
+        <button id="nav-register-btn" onclick="openLandingAuthModal('register')" class="btn btn-primary btn-sm" style="display:inline-flex; align-items:center; gap:0.4rem; white-space:nowrap;">
+          <span>📝 Register / Sign In</span>
+        </button>
+
         <!-- Theme Toggle Button -->
         <button id="theme-toggle" class="btn btn-icon" aria-label="Toggle Dark/Light Mode" title="Toggle Theme">
           <span id="theme-icon">🌙</span>
         </button>
-        <!-- User Profile Icon Button (Replaces right menu bar) -->
-        <button id="nav-profile-btn" onclick="openProfileModal()" class="btn btn-secondary profile-nav-btn" aria-label="User Profile" title="View User Profile" style="gap:0.55rem; white-space:nowrap; display:inline-flex; align-items:center; padding:0.45rem 0.9rem; border-radius:var(--radius-full);">
+
+        <!-- User Profile Icon Button (Visible once registered) -->
+        <button id="nav-profile-btn" onclick="openProfileModal()" class="btn btn-secondary profile-nav-btn" aria-label="User Profile" title="View User Profile" style="gap:0.55rem; white-space:nowrap; display:none; align-items:center; padding:0.45rem 0.9rem; border-radius:var(--radius-full);">
           <span id="nav-profile-avatar" style="width:26px; height:26px; border-radius:50%; background:var(--primary); color:#ffffff; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem;">👤</span>
           <span id="nav-profile-label" style="font-weight:600; font-size:0.88rem;">Profile</span>
         </button>
@@ -2245,6 +2623,87 @@
 
       <div class="complexity-note">
         💡 Note: Timely decisions and efficient resource distribution minimize food waste and support local families!
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       G. FOUR OPERATIONAL PATHWAYS TO RESCUE FOOD
+       ========================================================================== -->
+  <section id="three-ways" style="padding: 4.5rem 0; background: var(--bg-surface); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+    <div class="container">
+      <div class="text-center mx-auto" style="text-align: center; margin-bottom: 2.5rem;">
+        <span class="section-tag">Take Direct Action</span>
+        <h2 class="section-title">Four Pathways to Food Rescue</h2>
+        <p class="section-subtitle mx-auto">Choose your dedicated portal or launch the unified multi-role platform.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Card 1: Donor -->
+        <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--primary); transition: transform 0.2s ease;">
+          <div>
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary-alpha); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1.25rem;">
+              👨‍🍳
+            </div>
+            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--text-dark);">Donate Surplus Food</h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+              Canteens, restaurants, hotels, and event hosts post leftover edible meals in seconds with live countdown timers and pickup windows.
+            </p>
+          </div>
+          <a href="donate.html" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            👨‍🍳 Open Donor Portal ➔
+          </a>
+        </div>
+
+        <!-- Card 2: Courier -->
+        <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--accent-mango); transition: transform 0.2s ease;">
+          <div>
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--accent-mango-alpha); color: var(--accent-amber); display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1.25rem;">
+              🚴
+            </div>
+            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--text-dark);">Courier Portal</h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+              Student and volunteer couriers claim nearby rescue pickups, navigate route checkpoints, and deliver to community centers.
+            </p>
+          </div>
+          <a href="courier.html" class="btn btn-accent" style="width: 100%; justify-content: center;">
+            🚴 Open Courier Portal ➔
+          </a>
+        </div>
+
+        <!-- Card 3: NGO Shelter -->
+        <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--accent-cyan); transition: transform 0.2s ease;">
+          <div>
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--accent-cyan-alpha); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1.25rem;">
+              🏢
+            </div>
+            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--text-dark);">NGO Shelter Hub</h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+              Community centers and shelters post daily meal requirements, coordinate incoming batches, and log beneficiary nutrition.
+            </p>
+          </div>
+          <a href="ngo-hub.html" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+            🏢 Open NGO Hub ➔
+          </a>
+        </div>
+
+        <!-- Card 4: Multi-View Web App -->
+        <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid #E8643C; transition: transform 0.2s ease; background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(232, 100, 60, 0.05) 100%);">
+          <div>
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(232, 100, 60, 0.15); color: #E8643C; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1.25rem;">
+              🚀
+            </div>
+            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--text-dark);">Multi-Role Rescue App</h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+              Unified platform featuring verified role authentication, donor CSR charts, receiver live rescue map, and volunteer checklist.
+            </p>
+          </div>
+          <a href="portal.html" class="btn btn-primary" style="width: 100%; justify-content: center; background: #E8643C; border-color: #E8643C;">
+            🚀 Launch Portal App ➔
+          </a>
+        </div>
+
       </div>
     </div>
   </section>
@@ -2842,25 +3301,6 @@
     });
 
     /* --------------------------------------------------------------------------
-       5b. LEFT SIDE PANEL MENU DRAWER TOGGLE
-       -------------------------------------------------------------------------- */
-    function openSidePanel() {
-      const drawer = document.getElementById('side-panel-drawer');
-      const backdrop = document.getElementById('side-panel-backdrop');
-      if (drawer) drawer.classList.add('active');
-      if (backdrop) backdrop.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeSidePanel() {
-      const drawer = document.getElementById('side-panel-drawer');
-      const backdrop = document.getElementById('side-panel-backdrop');
-      if (drawer) drawer.classList.remove('active');
-      if (backdrop) backdrop.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-
-    /* --------------------------------------------------------------------------
        6. INTERSECTION OBSERVER FOR SCROLL REVEAL & COUNTERS
        -------------------------------------------------------------------------- */
     const observerOptions = { threshold: 0.25 };
@@ -3063,22 +3503,29 @@
       e.preventDefault();
       const email = document.getElementById('landing-login-email').value.trim();
       const role = document.getElementById('landing-login-role').value;
+      const mappedRole = (role === 'ngo' || role === 'receiver') ? 'receiver' : role;
       const name = email.split('@')[0].replace(/[._]/g, ' ');
       const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
       const userObj = {
-        id: role === 'donor' ? 1 : role === 'volunteer' ? 2 : 3,
+        id: mappedRole === 'donor' ? 'usr_d1' : mappedRole === 'volunteer' ? 'usr_v1' : 'usr_r1',
         email: email.toLowerCase(),
         name: formattedName,
-        role: role,
-        org: role === 'donor' ? 'Campus Canteen' : role === 'volunteer' ? 'Swift Rescue Network' : 'Hope Shelter Kitchen'
+        role: mappedRole,
+        org: mappedRole === 'donor' ? 'Campus Canteen' : mappedRole === 'volunteer' ? 'Swift Rescue Network' : 'Hope Shelter Kitchen'
       };
 
       try {
         localStorage.setItem('fb_auth_user', JSON.stringify(userObj));
+        localStorage.setItem('fb_auth_token', 'fb_token_' + Date.now());
       } catch (_err) {}
 
-      window.location.href = 'portal.html';
+      closeLandingAuthModal();
+      updateNavbarAuthState();
+      showLandingToast(`Signed in as ${formattedName} (${mappedRole.toUpperCase()}). Take Action unlocked!`, 'success');
+      setTimeout(() => {
+        openActionDropdownForRole(mappedRole);
+      }, 300);
     }
 
     function handleLandingRegister(e) {
@@ -3086,50 +3533,184 @@
       const name = document.getElementById('landing-reg-name').value.trim();
       const email = document.getElementById('landing-reg-email').value.trim();
       const role = document.getElementById('landing-reg-role').value;
+      const mappedRole = (role === 'ngo' || role === 'receiver') ? 'receiver' : role;
       const org = document.getElementById('landing-reg-org').value.trim() || `${name}'s Organization`;
 
       const userObj = {
-        id: Date.now(),
+        id: 'usr_' + Date.now(),
         email: email.toLowerCase(),
         name: name,
-        role: role,
+        role: mappedRole,
         org: org
       };
 
       try {
         localStorage.setItem('fb_auth_user', JSON.stringify(userObj));
+        localStorage.setItem('fb_auth_token', 'fb_token_' + Date.now());
       } catch (_err) {}
 
-      window.location.href = 'portal.html';
+      closeLandingAuthModal();
+      updateNavbarAuthState();
+      showLandingToast(`🎉 Registration complete for ${name}! Take Action hub is now unlocked in your navbar.`, 'success');
+      setTimeout(() => {
+        openActionDropdownForRole(mappedRole);
+      }, 300);
     }
 
     function quickAuthDemo(email, name, role, org) {
-      const userObj = { id: role === 'donor' ? 1 : role === 'volunteer' ? 2 : 3, email, name, role, org };
+      const mappedRole = (role === 'ngo' || role === 'receiver') ? 'receiver' : role;
+      const userObj = { id: mappedRole === 'donor' ? 'usr_d1' : mappedRole === 'volunteer' ? 'usr_v1' : 'usr_r1', email, name, role: mappedRole, org };
       try {
         localStorage.setItem('fb_auth_user', JSON.stringify(userObj));
+        localStorage.setItem('fb_auth_token', 'fb_token_' + Date.now());
       } catch (_err) {}
-      window.location.href = 'portal.html';
+      closeLandingAuthModal();
+      updateNavbarAuthState();
+      showLandingToast(`Demo authenticated as ${name} (${mappedRole.toUpperCase()})`, 'info');
+      setTimeout(() => {
+        openActionDropdownForRole(mappedRole);
+      }, 300);
     }
 
     function launchPortalWithRole(roleKey) {
       try {
+        const mappedRole = (roleKey === 'ngo' || roleKey === 'receiver') ? 'receiver' : roleKey;
         const saved = localStorage.getItem('fb_auth_user');
         let user = saved ? JSON.parse(saved) : null;
         if (!user) {
           user = {
-            id: roleKey === 'donor' ? 1 : roleKey === 'volunteer' ? 2 : 3,
-            name: roleKey === 'donor' ? 'Campus Canteen Manager' : roleKey === 'volunteer' ? 'Courier Alex' : 'Hope Shelter Staff',
-            email: `${roleKey}@foodbridge.org`,
-            role: roleKey,
-            org: roleKey === 'donor' ? 'Green Valley Canteen' : roleKey === 'volunteer' ? 'Swift Rescue Network' : 'Hope Community Shelter'
+            id: mappedRole === 'donor' ? 'usr_d1' : mappedRole === 'volunteer' ? 'usr_v1' : 'usr_r1',
+            name: mappedRole === 'donor' ? 'Green Leaves Banquet' : mappedRole === 'volunteer' ? 'Arjun V. (Student Volunteer)' : 'Robin Hood Army Bengaluru',
+            email: mappedRole === 'donor' ? 'donor@foodbridge.org' : mappedRole === 'volunteer' ? 'volunteer@foodbridge.org' : 'receiver@foodbridge.org',
+            role: mappedRole,
+            org: mappedRole === 'donor' ? 'Green Leaves Banquet & Caterers' : mappedRole === 'volunteer' ? 'Bengaluru Volunteer Brigade' : 'Robin Hood Army Hub'
           };
         } else {
-          user.role = roleKey;
+          user.role = mappedRole;
         }
         localStorage.setItem('fb_auth_user', JSON.stringify(user));
+        localStorage.setItem('fb_auth_token', 'fb_token_' + Date.now());
+        window.location.href = `portal.html#/${mappedRole}`;
+        return;
       } catch (_err) {}
       window.location.href = 'portal.html';
     }
+
+    /* --------------------------------------------------------------------------
+       10B. PROFESSIONAL TABBED ACTION DROPDOWN CONTROLLER
+       -------------------------------------------------------------------------- */
+    function toggleActionDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('nav-action-menu');
+      const btn = document.getElementById('nav-action-toggle');
+      if (!menu) return;
+      const isOpen = menu.style.display === 'block';
+      if (isOpen) {
+        closeActionDropdown();
+      } else {
+        menu.style.display = 'block';
+        if (btn) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      }
+    }
+
+    function closeActionDropdown() {
+      const menu = document.getElementById('nav-action-menu');
+      const btn = document.getElementById('nav-action-toggle');
+      if (menu) menu.style.display = 'none';
+      if (btn) {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function openActionDropdownForRole(roleKey) {
+      const mappedRole = (roleKey === 'ngo' || roleKey === 'receiver') ? 'ngo' : (roleKey === 'volunteer' ? 'courier' : (roleKey || 'donor'));
+      const menu = document.getElementById('nav-action-menu');
+      const btn = document.getElementById('nav-action-toggle');
+      if (menu) menu.style.display = 'block';
+      if (btn) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+      switchActionHubTab(mappedRole);
+    }
+
+    function switchActionHubTab(tabName) {
+      const tabKeys = ['donor', 'courier', 'ngo', 'portal'];
+      tabKeys.forEach(k => {
+        const btn = document.getElementById(`tab-btn-${k}`);
+        const pane = document.getElementById(`pane-${k}`);
+        const isActive = k === tabName;
+        if (btn) {
+          btn.classList.toggle('active', isActive);
+          btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        }
+        if (pane) {
+          pane.classList.toggle('active', isActive);
+        }
+      });
+    }
+
+    function showLandingToast(message, type = 'success') {
+      let container = document.getElementById('landing-toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'landing-toast-container';
+        container.className = 'landing-toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = `landing-toast toast-${type}`;
+      toast.innerHTML = `<span>${type === 'success' ? '✅' : 'ℹ️'}</span> <span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(40px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
+    function updateNavbarAuthState() {
+      const saved = localStorage.getItem('fb_auth_user');
+      let user = saved ? JSON.parse(saved) : null;
+      const isRegistered = !!user;
+
+      const actionWrapper = document.getElementById('nav-action-wrapper');
+      const registerBtn = document.getElementById('nav-register-btn');
+      const profileBtn = document.getElementById('nav-profile-btn');
+      const rolePill = document.getElementById('nav-action-role-pill');
+      const actionUserName = document.getElementById('action-dropdown-user-name');
+
+      if (actionWrapper) actionWrapper.style.display = isRegistered ? 'block' : 'none';
+      if (registerBtn) registerBtn.style.display = isRegistered ? 'none' : 'inline-flex';
+      if (profileBtn) profileBtn.style.display = isRegistered ? 'inline-flex' : 'none';
+
+      if (user) {
+        const roleName = (user.role === 'ngo' || user.role === 'receiver') ? 'NGO Shelter' : (user.role === 'volunteer' ? 'Courier' : 'Donor');
+        if (rolePill) rolePill.innerText = roleName;
+        if (actionUserName) actionUserName.innerText = user.name || 'Member';
+
+        // Set default active tab in action hub
+        const defaultTab = (user.role === 'ngo' || user.role === 'receiver') ? 'ngo' : (user.role === 'volunteer' ? 'courier' : 'donor');
+        switchActionHubTab(defaultTab);
+      } else {
+        closeActionDropdown();
+      }
+
+      updateProfileModalContent();
+    }
+
+    // Dismiss dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('nav-action-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeActionDropdown();
+      }
+    });
 
     /* --------------------------------------------------------------------------
        11. USER PROFILE MODAL & STATE MANAGEMENT
@@ -3194,24 +3775,32 @@
       if (!saved) {
         launchPortalWithRole('donor');
       } else {
+        try {
+          const user = JSON.parse(saved);
+          const mappedRole = (user.role === 'ngo' || user.role === 'receiver') ? 'receiver' : (user.role || 'donor');
+          window.location.href = `portal.html#/${mappedRole}`;
+          return;
+        } catch (_e) {}
         window.location.href = 'portal.html';
       }
     }
 
     function handleProfileSignOut() {
       localStorage.removeItem('fb_auth_user');
-      updateProfileModalContent();
+      localStorage.removeItem('fb_auth_token');
+      updateNavbarAuthState();
       closeProfileModal();
+      showLandingToast("Signed out. You are now viewing FoodBridge as a guest.", "info");
     }
 
-    // Auto-update profile nav button and initialize live simulation on script execution
+    // Auto-update auth state and initialize live simulation
     document.addEventListener('DOMContentLoaded', () => {
-      updateProfileModalContent();
+      updateNavbarAuthState();
       if (typeof renderSimStep === 'function') renderSimStep(0);
     });
     // Immediate fallback in case DOMContentLoaded already fired
     setTimeout(() => {
-      updateProfileModalContent();
+      updateNavbarAuthState();
       if (typeof renderSimStep === 'function') renderSimStep(0);
     }, 100);
   </script>

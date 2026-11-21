@@ -1,18 +1,2176 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodBridge Portal — Operational Rescue Dashboard</title>
-    <meta name="description" content="FoodBridge Operational Portal: Connect surplus food donors, volunteer couriers, and NGO shelters with real-time expiry tracking." />
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
-    <div id="root"></div>
-    <script type="module" src="/web-portal/src/main.jsx"></script>
-  </body>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodBridge — Surplus Food Rescue Multi-View Platform</title>
+  <meta name="description" content="FoodBridge multi-role surplus food rescue application connecting Donors, Receivers, Volunteers, and Admins with live expiry tracking, interactive map, and smart matching.">
+
+  <!-- Google Fonts: Fraunces & Quicksand (Headings), Inter (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- ==========================================================================
+       1. GLOBAL STYLES & DESIGN TOKENS
+       ========================================================================== -->
+  <style>
+    :root {
+      /* FoodBridge Official Palette */
+      --bg-cream: #FFF8EC;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F6EDE0;
+      --bg-card: #FFFFFF;
+      --bg-elevated: #FFFFFF;
+
+      --leaf-green: #2F5D3A;
+      --leaf-green-light: #417D50;
+      --leaf-green-dark: #1E3D26;
+      --leaf-green-alpha: rgba(47, 93, 58, 0.12);
+
+      --tomato-orange: #E8643C;
+      --tomato-light: #F07E5B;
+      --tomato-alpha: rgba(232, 100, 60, 0.14);
+
+      --mustard: #F2B33D;
+      --mustard-dark: #D49624;
+      --mustard-alpha: rgba(242, 179, 61, 0.18);
+
+      --bamboo-dark: #5D4037;
+      --bamboo-wood: #8C652D;
+      --bamboo-light: #C9A66B;
+      --bamboo-straw: #E3C792;
+
+      --forest-text: #1F3326;
+      --text-muted: #566E5E;
+      --text-light: #8CA093;
+      --border-color: #E6D9C8;
+      --border-focus: #2F5D3A;
+
+      --radius-sm: 0.5rem;
+      --radius-md: 0.85rem;
+      --radius-lg: 1.25rem;
+      --radius-xl: 1.75rem;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 2px 8px rgba(31, 51, 38, 0.05);
+      --shadow-md: 0 6px 20px rgba(31, 51, 38, 0.08);
+      --shadow-lg: 0 12px 36px rgba(31, 51, 38, 0.12);
+
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-heading: 'Quicksand', -apple-system, sans-serif;
+      --font-body: 'Inter', -apple-system, system-ui, sans-serif;
+
+      --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg-cream: #121A15;
+      --bg-surface: #1B2620;
+      --bg-subtle: #24332B;
+      --bg-card: #1B2620;
+      --bg-elevated: #24332B;
+
+      --forest-text: #F4F8F5;
+      --text-muted: #A6BDAD;
+      --text-light: #728A7A;
+      --border-color: #2F4237;
+
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100vh;
+      font-family: var(--font-body);
+      background-color: var(--bg-cream);
+      color: var(--forest-text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color var(--transition-normal), color var(--transition-normal);
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--forest-text);
+    }
+
+    h5, h6 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      color: var(--forest-text);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font-family: inherit; font-size: inherit; }
+
+    :focus-visible {
+      outline: 3px solid var(--mustard);
+      outline-offset: 3px;
+    }
+
+    /* Button System */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.35rem;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: var(--radius-full);
+      border: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: 44px;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--leaf-green), var(--leaf-green-light));
+      color: #FFFFFF;
+      border-color: var(--leaf-green);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(47, 93, 58, 0.35);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--forest-text);
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-subtle);
+      border-color: var(--leaf-green);
+      color: var(--leaf-green);
+    }
+
+    .btn-tomato {
+      background: linear-gradient(135deg, var(--tomato-orange), var(--tomato-light));
+      color: #FFFFFF;
+      border-color: var(--tomato-orange);
+    }
+    .btn-tomato:hover {
+      box-shadow: 0 6px 20px rgba(232, 100, 60, 0.35);
+    }
+
+    .btn-mustard {
+      background: linear-gradient(135deg, var(--mustard), var(--mustard-dark));
+      color: #1F3326;
+      border-color: var(--mustard);
+    }
+
+    .btn-sm {
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      min-height: 38px;
+    }
+
+    .btn-icon {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--forest-text);
+    }
+
+    /* Cards & Panels */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-fast);
+    }
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 1.15rem;
+    }
+    .form-label {
+      display: block;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.88rem;
+      margin-bottom: 0.35rem;
+      color: var(--forest-text);
+    }
+    .form-control {
+      width: 100%;
+      min-height: 44px;
+      padding: 0.65rem 0.95rem;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--forest-text);
+      font-size: 0.95rem;
+      transition: all var(--transition-fast);
+    }
+    .form-control:focus {
+      border-color: var(--leaf-green);
+      box-shadow: 0 0 0 3px var(--leaf-green-alpha);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .badge-available { background: var(--leaf-green-alpha); color: var(--leaf-green); border: 1px solid rgba(47,93,58,0.3); }
+    .badge-claimed { background: var(--mustard-alpha); color: var(--mustard-dark); border: 1px solid rgba(242,179,61,0.4); }
+    .badge-pickedup, .badge-picked_up { background: var(--tomato-alpha); color: var(--tomato-orange); border: 1px solid rgba(232,100,60,0.4); }
+    .badge-delivered { background: rgba(47, 93, 58, 0.2); color: #1B4524; border: 1px solid rgba(47,93,58,0.5); }
+    .badge-expired { background: rgba(100, 116, 139, 0.15); color: #64748B; border: 1px solid #CBD5E1; }
+
+    /* Shell Layout */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Sticky Header */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 248, 236, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    [data-theme="dark"] .app-header {
+      background: rgba(18, 26, 21, 0.94);
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.45rem;
+      color: var(--leaf-green);
+    }
+
+    .shell-stats-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.4rem 0.95rem;
+      border-radius: var(--radius-full);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Desktop Sidebar & Content Grid */
+    .app-body {
+      display: flex;
+      flex: 1;
+    }
+
+    .app-sidebar {
+      width: 260px;
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .sidebar-item a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--forest-text);
+      transition: all var(--transition-fast);
+      min-height: 44px;
+    }
+    .sidebar-item a:hover {
+      background: var(--bg-subtle);
+      color: var(--leaf-green);
+    }
+    .sidebar-item a.active {
+      background: var(--leaf-green);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(47, 93, 58, 0.3);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 2rem 2.5rem 5rem;
+      max-width: 1320px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Mobile Bottom Navigation Bar */
+    .mobile-tab-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+      padding: 0.5rem 0.75rem;
+      z-index: 90;
+      justify-content: space-around;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (max-width: 900px) {
+      .app-sidebar { display: none; }
+      .app-main { padding: 1.25rem 1rem 5.5rem; }
+      .mobile-tab-bar { display: flex; }
+    }
+
+    .mobile-tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      min-width: 60px;
+      min-height: 44px;
+      justify-content: center;
+    }
+    .mobile-tab-item.active {
+      color: var(--leaf-green);
+    }
+
+    /* Split Auth Screen */
+    .auth-split-wrapper {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-cream);
+    }
+    @media (max-width: 960px) {
+      .auth-split-wrapper { grid-template-columns: 1fr; }
+      .auth-illustration-side { display: none; }
+    }
+
+    .auth-illustration-side {
+      background: linear-gradient(135deg, #F3E7D3 0%, var(--bg-cream) 100%);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3rem 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .falling-food-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .auth-form-side {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 2rem;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    /* Role Picker Cards */
+    .role-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 540px) {
+      .role-picker-grid { grid-template-columns: 1fr; }
+    }
+
+    .role-card-btn {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem 0.6rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      min-height: 44px;
+    }
+    .role-card-btn:hover {
+      border-color: var(--leaf-green-light);
+      background: var(--bg-subtle);
+      transform: translateY(-2px);
+    }
+    .role-card-btn.selected {
+      border-color: var(--leaf-green);
+      background: var(--leaf-green-alpha);
+      box-shadow: 0 0 0 2px var(--leaf-green);
+    }
+
+    /* Password Strength Meter */
+    .strength-meter-bar {
+      height: 6px;
+      border-radius: var(--radius-full);
+      background: var(--border-color);
+      overflow: hidden;
+      margin-top: 0.4rem;
+    }
+    .strength-meter-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease, background 0.3s ease;
+    }
+
+    /* Live Circular Expiry Ring */
+    .expiry-ring-svg {
+      width: 48px;
+      height: 48px;
+      transform: rotate(-90deg);
+    }
+    .expiry-ring-bg {
+      stroke: var(--border-color);
+      stroke-width: 5;
+      fill: none;
+    }
+    .expiry-ring-fg {
+      stroke-width: 5;
+      stroke-linecap: round;
+      fill: none;
+      transition: stroke-dashoffset 0.6s ease;
+    }
+
+    /* Stylised Interactive SVG Map for Receivers */
+    .mock-map-container {
+      width: 100%;
+      height: 280px;
+      background: #E8F0EA;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    [data-theme="dark"] .mock-map-container {
+      background: #19271E;
+    }
+
+    /* Dropdown Menus */
+    .dropdown-container {
+      position: relative;
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      min-width: 290px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      padding: 0.75rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.35rem;
+      z-index: 150;
+      margin-top: 0.5rem;
+      animation: fadeIn 0.15s ease-out;
+    }
+    .dropdown-menu.active { display: flex; }
+
+    /* Toast Notification Floating Banner */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-width: 380px;
+    }
+    .toast-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      color: var(--forest-text);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+      animation: slideUp 0.25s ease-out;
+      font-size: 0.88rem;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(18, 26, 21, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      max-width: 580px;
+      width: 100%;
+      padding: 2rem;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+
+    /* Fruit Drop Success Animation */
+    .fruit-drop-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 248, 236, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .fruit-drop-overlay.active { display: flex; }
+    .dropping-fruit {
+      font-size: 4rem;
+      animation: fruitDropAnim 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes fruitDropAnim {
+      0% { transform: translateY(-160px) scale(0.6); opacity: 0; }
+      60% { transform: translateY(20px) scale(1.15); opacity: 1; }
+      80% { transform: translateY(-10px) scale(0.95); }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+      .falling-food-canvas { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       2. APPLICATION SHELL & ROUTER ROOT
+       ========================================================================== -->
+  <div id="app-root">
+    <!-- Rendered dynamically by Vanilla JS Router -->
+  </div>
+
+  <!-- FRUIT DROP SUCCESS ANIMATION OVERLAY -->
+  <div id="fruit-drop-modal" class="fruit-drop-overlay" aria-hidden="true">
+    <div class="dropping-fruit" id="dropping-fruit-icon">🍎</div>
+    <div style="font-family:var(--font-display); font-size:1.8rem; color:var(--leaf-green); margin-top:1rem; font-weight:700;" id="fruit-drop-title">
+      Rescued into the Basket!
+    </div>
+    <p style="color:var(--text-muted); font-size:0.95rem; margin-top:0.3rem;">Entering your personalized FoodBridge hub...</p>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- GLOBAL FOOD-SAFETY GUIDELINES MODAL -->
+  <div id="safety-guidelines-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <span class="badge badge-available">🛡️ Safe Rescue Certified</span>
+        <button class="btn btn-icon btn-sm" onclick="App.closeSafetyModal()">&times;</button>
+      </div>
+      <h2 style="font-size:1.6rem; margin-bottom:0.75rem;">Food Safety &amp; Hygiene Standards</h2>
+      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.25rem;">
+        FoodBridge mandates strict adherence to food safety protocols under public health guidelines before donating or claiming surplus food.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.88rem; margin-bottom:1.5rem;">
+        <div class="card" style="padding:0.85rem; border-left:4px solid var(--leaf-green);">
+          <strong>1. Two-Hour Rule:</strong> Cooked surplus must be refrigerated below 5°C or maintained hot above 60°C within 2 hours of preparation.
+        </div>
+        <div class="card" style="padding:0.85rem; border-left:4px solid var(--mustard);">
+          <strong>2. Clean Sealed Packaging:</strong> Food must be secured in food-grade, sanitized containers or foil lids labeled with dish name &amp; allergens.
+        </div>
+        <div class="card" style="padding:0.85rem; border-left:4px solid var(--tomato-orange);">
+          <strong>3. Freshness Verification:</strong> Inspect aroma, visual quality, and safe-to-consume windows before handing to volunteers or distributing.
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;" onclick="App.closeSafetyModal()">I Understand &amp; Agree to Safety Standards ➔</button>
+    </div>
+  </div>
+
+  <!-- CLAIM CONFIRMATION MODAL (RECEIVER) -->
+  <div id="claim-confirm-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <span class="badge badge-claimed">Claim Confirmation</span>
+        <button class="btn btn-icon btn-sm" onclick="App.closeClaimModal()">&times;</button>
+      </div>
+      <h2 style="font-size:1.6rem; margin-bottom:0.4rem;" id="claim-modal-title">Claim Food Rescue</h2>
+      <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:1.25rem;" id="claim-modal-donor">From Meghna Foods Indiranagar</p>
+
+      <div style="background:var(--bg-subtle); padding:1rem; border-radius:var(--radius-md); font-size:0.88rem; margin-bottom:1.25rem;">
+        <div><strong>Portions:</strong> <span id="claim-modal-qty">50 servings</span></div>
+        <div><strong>Pickup Address:</strong> <span id="claim-modal-addr">100ft Road, Indiranagar, Bengaluru</span></div>
+        <div><strong>Pickup Window:</strong> <span id="claim-modal-window">Safe within 2 hours</span></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Logistics Option *</label>
+        <select id="claim-delivery-option" class="form-control">
+          <option value="volunteer">Request Volunteer Courier Delivery (Recommended)</option>
+          <option value="self">Self-Pickup by Shelter Staff</option>
+        </select>
+      </div>
+
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="App.closeClaimModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="App.confirmClaim()">Confirm &amp; Reserve Food ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RATE & THANK DONOR MODAL -->
+  <div id="rate-donor-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <span class="badge badge-available">Gratitude Feedback</span>
+        <button class="btn btn-icon btn-sm" onclick="App.closeRateModal()">&times;</button>
+      </div>
+      <h2 style="font-size:1.6rem; margin-bottom:0.4rem;">Rate &amp; Thank Donor</h2>
+      <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:1.25rem;">Share feedback on the freshness and hygiene of the received meals.</p>
+
+      <div style="font-size:2rem; text-align:center; margin-bottom:1rem; cursor:pointer;" id="rating-stars">
+        ⭐⭐⭐⭐⭐
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Thank You Message to Donor Kitchen</label>
+        <textarea id="rate-message" class="form-control" rows="3" placeholder="Thank you Chef Robert! The biryani was fresh, hot, and nourished 50 shelter children tonight."></textarea>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;" onclick="App.submitRating()">Send Gratitude &amp; Complete Rescue ➔</button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       3. CLIENT APPLICATION JAVASCRIPT (DATA LAYER, AUTH, VIEWS, ROUTER)
+       ========================================================================== -->
+  <script>
+    /* ==========================================================================
+       A. STORAGE & MOCK DATA LAYER (Bengaluru / Indian Seeded Context)
+       ========================================================================== */
+    const STORAGE_KEY = "fb_multiview_app_store_v2";
+
+    const DEFAULT_STORE = {
+      currentUser: null, // { id, name, email, role, org, area, phone, token }
+      language: "en", // "en" | "hi"
+      theme: "light",
+      
+      // Users Seed
+      users: [
+        { id: "usr_d1", name: "Meghna Foods Indiranagar", email: "donor@meghna.in", role: "donor", org: "Meghna Foods Ltd", area: "Indiranagar, Bengaluru", phone: "+91 98450 11223" },
+        { id: "usr_r1", name: "Robin Hood Army Bengaluru", email: "receiver@rha.org", role: "receiver", org: "Robin Hood Army Hub", area: "Koramangala 4th Block", phone: "+91 98860 33445", peopleServed: 180 },
+        { id: "usr_v1", name: "Aarav Sharma", email: "volunteer@foodbridge.in", role: "volunteer", org: "Swift Volunteer Courier", area: "Central Bengaluru", phone: "+91 97420 55667", vehicle: "Scooter / Bike", available: true },
+        { id: "usr_a1", name: "Deepa Narayan (Admin)", email: "admin@foodbridge.in", role: "admin", org: "FoodBridge Trust", area: "MG Road, Bengaluru", phone: "+91 98440 99887" }
+      ],
+
+      // Listings Seed
+      listings: [
+        {
+          id: "LST-881",
+          donorId: "usr_d1",
+          donorName: "Meghna Foods Indiranagar",
+          foodName: "50 Servings Royal Veg Biryani & Salan",
+          category: "cooked",
+          quantity: 50,
+          unit: "servings",
+          dietary: ["veg", "halal"],
+          address: "100ft Road, Indiranagar, Bengaluru",
+          expiresAt: new Date(Date.now() + 2.5 * 3600 * 1000).toISOString(),
+          pickupWindow: "Now - 8:30 PM",
+          status: "available", // available | claimed | picked_up | delivered | expired
+          claimedBy: null,
+          volunteerId: null,
+          distanceKm: 1.8,
+          coords: { x: 45, y: 35 } // Map % coordinates
+        },
+        {
+          id: "LST-882",
+          donorId: "usr_d1",
+          donorName: "Glen's Bakehouse",
+          foodName: "40 Fresh Croissants & Sourdough Loaves",
+          category: "bakery",
+          quantity: 40,
+          unit: "boxes",
+          dietary: ["veg"],
+          address: "Lavelle Road, Bengaluru",
+          expiresAt: new Date(Date.now() + 5 * 3600 * 1000).toISOString(),
+          pickupWindow: "Now - 10:00 PM",
+          status: "claimed",
+          claimedBy: "Robin Hood Army Bengaluru",
+          volunteerId: "Aarav Sharma",
+          distanceKm: 3.2,
+          coords: { x: 62, y: 55 }
+        },
+        {
+          id: "LST-883",
+          donorId: "usr_d1",
+          donorName: "Green Harvest Organic Store",
+          foodName: "35 kg Fresh Apples & Ripe Bananas",
+          category: "produce",
+          quantity: 35,
+          unit: "kg",
+          dietary: ["vegan", "veg"],
+          address: "Jayanagar 4th T Block",
+          expiresAt: new Date(Date.now() + 14 * 3600 * 1000).toISOString(),
+          pickupWindow: "Till Tomorrow 11:00 AM",
+          status: "available",
+          claimedBy: null,
+          volunteerId: null,
+          distanceKm: 4.5,
+          coords: { x: 30, y: 70 }
+        }
+      ],
+
+      // Standing Need Requests from Receivers
+      needs: [
+        { id: "ND-101", receiverName: "Robin Hood Army Bengaluru", title: "Warm Evening Meals for 60 Street Children", quantity: 60, deadline: "7:00 PM Daily", area: "Koramangala" },
+        { id: "ND-102", receiverName: "Asha Kiran Senior Shelter", title: "Soft Cooked Porridge or Dal Rice for 45 Seniors", quantity: 45, deadline: "8:00 PM Daily", area: "Malleshwaram" }
+      ],
+
+      // Notifications Seed
+      notifications: [
+        { id: 1, text: "New surplus: 50 Servings Veg Biryani posted in Indiranagar!", time: "5 min ago", read: false },
+        { id: 2, text: "Glen's Bakehouse listing claimed by Robin Hood Army.", time: "25 min ago", read: false },
+        { id: 3, text: "Weekly environmental impact report generated.", time: "2 hr ago", read: true }
+      ]
+    };
+
+    /* Data layer with fallback handling */
+    const DataLayer = {
+      get() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) return JSON.parse(raw);
+        } catch (_e) {}
+        this.save(DEFAULT_STORE);
+        return DEFAULT_STORE;
+      },
+      save(data) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (_e) {}
+      },
+      reset() {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (_e) {}
+        this.save(DEFAULT_STORE);
+      }
+    };
+
+    /* Mock API Client functions (structured for future real backend swap) */
+    const api = {
+      login(email, _password) {
+        // Passwords are never stored plain in localStorage; mock auth stores only a fake session token
+        const state = DataLayer.get();
+        const user = state.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (!user) throw new Error("Account not found. Please try the demo shortcuts below.");
+        const sessionUser = { ...user, token: `fb_token_${Date.now()}` };
+        state.currentUser = sessionUser;
+        DataLayer.save(state);
+        return sessionUser;
+      },
+      signup(userData) {
+        const state = DataLayer.get();
+        const newUser = {
+          id: `usr_${Date.now()}`,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          org: userData.org,
+          area: userData.area,
+          phone: userData.phone || "+91 98450 00000",
+          peopleServed: userData.peopleServed || null,
+          vehicle: userData.vehicle || null,
+          token: `fb_token_${Date.now()}`
+        };
+        state.users.push(newUser);
+        state.currentUser = newUser;
+        DataLayer.save(state);
+        return newUser;
+      },
+      createListing(listingData) {
+        const state = DataLayer.get();
+        const newListing = {
+          id: `LST-${Math.floor(800 + Math.random() * 200)}`,
+          donorId: state.currentUser.id,
+          donorName: state.currentUser.org || state.currentUser.name,
+          foodName: listingData.foodName,
+          category: listingData.category,
+          quantity: Number(listingData.quantity),
+          unit: listingData.unit,
+          dietary: listingData.dietary || ["veg"],
+          address: listingData.address,
+          expiresAt: listingData.expiresAt,
+          pickupWindow: "Available Now",
+          status: "available",
+          claimedBy: null,
+          volunteerId: null,
+          distanceKm: 1.5,
+          coords: { x: 45 + Math.floor(Math.random() * 20), y: 35 + Math.floor(Math.random() * 25) }
+        };
+        state.listings.unshift(newListing);
+        DataLayer.save(state);
+        return newListing;
+      },
+      claimListing(id, receiverName, option) {
+        const state = DataLayer.get();
+        const item = state.listings.find(l => l.id === id);
+        if (item) {
+          item.status = "claimed";
+          item.claimedBy = receiverName;
+          item.volunteerId = option === "volunteer" ? "Aarav Sharma (Assigned)" : "Self-Pickup by Shelter";
+          DataLayer.save(state);
+        }
+        return item;
+      },
+      updateStatus(id, newStatus) {
+        const state = DataLayer.get();
+        const item = state.listings.find(l => l.id === id);
+        if (item) {
+          item.status = newStatus;
+          DataLayer.save(state);
+        }
+        return item;
+      },
+      postNeed(needData) {
+        const state = DataLayer.get();
+        const newNeed = {
+          id: `ND-${Date.now()}`,
+          receiverName: state.currentUser.org || state.currentUser.name,
+          title: needData.title,
+          quantity: Number(needData.quantity) || 50,
+          deadline: needData.deadline || "Daily 8 PM",
+          area: state.currentUser.area || "Bengaluru"
+        };
+        state.needs.unshift(newNeed);
+        DataLayer.save(state);
+        return newNeed;
+      }
+    };
+
+    /* ==========================================================================
+       B. LOCALIZATION DICTIONARY (EN & HI)
+       ========================================================================== */
+    const I18N = {
+      en: {
+        brand: "FoodBridge",
+        tagline: "Bridging Surplus Food to Hungry Hearts",
+        donor: "Donor",
+        receiver: "Receiver",
+        volunteer: "Volunteer",
+        admin: "Admin",
+        mealsRescued: "meals rescued",
+        postSurplus: "Post Surplus Food",
+        myListings: "My Listings",
+        findFood: "Find Food Near Me",
+        myClaims: "My Claims",
+        openTasks: "Open Deliveries",
+        completed: "Completed",
+        logout: "Log Out",
+        settings: "Settings"
+      },
+      hi: {
+        brand: "फ़ूडब्रिज",
+        tagline: "अतिरिक्त भोजन को ज़रूरतमंदों तक पहुँचाना",
+        donor: "अन्नदाता (Donor)",
+        receiver: "प्राप्तकर्ता (Receiver)",
+        volunteer: "स्वयंसेवक (Volunteer)",
+        admin: "व्यवस्थापक (Admin)",
+        mealsRescued: "भोजन बचाया",
+        postSurplus: "अतिरिक्त भोजन सूचीबद्ध करें",
+        myListings: "मेरी सूचियाँ",
+        findFood: "निकटतम भोजन खोजें",
+        myClaims: "मेरे दावे (Claims)",
+        openTasks: "खुले वितरण कार्य",
+        completed: "सफल वितरण",
+        logout: "लॉग आउट करें",
+        settings: "सेटिंग्स"
+      }
+    };
+
+    /* ==========================================================================
+       C. APPLICATION CORE ENGINE (Router, Auth, State)
+       ========================================================================== */
+    const App = {
+      state: DataLayer.get(),
+      pendingClaimId: null,
+
+      init() {
+        document.documentElement.setAttribute("data-theme", this.state.theme || "light");
+        window.addEventListener("hashchange", () => this.route());
+
+        if (!window.location.hash) {
+          window.location.hash = this.state.currentUser ? `#/${this.state.currentUser.role}` : "#/login";
+        } else {
+          this.route();
+        }
+      },
+
+      route() {
+        const hash = window.location.hash || "#/login";
+        const root = document.getElementById("app-root");
+        const user = this.state.currentUser;
+
+        // Protection
+        if (!user && (hash !== "#/login" && hash !== "#/signup")) {
+          window.location.hash = "#/login";
+          return;
+        }
+
+        if (user && (hash === "#/login" || hash === "#/signup")) {
+          window.location.hash = `#/${user.role}`;
+          return;
+        }
+
+        switch (hash) {
+          case "#/login":
+            root.innerHTML = Views.renderLogin();
+            this.initFallingFruitAnimation();
+            break;
+          case "#/signup":
+            root.innerHTML = Views.renderSignup();
+            this.initFallingFruitAnimation();
+            break;
+          case "#/donor":
+            this.enforceRole("donor");
+            root.innerHTML = Views.renderShell("donor", Views.renderDonorDashboard());
+            this.initDonorTimer();
+            break;
+          case "#/receiver":
+            this.enforceRole("receiver");
+            root.innerHTML = Views.renderShell("receiver", Views.renderReceiverDashboard());
+            break;
+          case "#/volunteer":
+            this.enforceRole("volunteer");
+            root.innerHTML = Views.renderShell("volunteer", Views.renderVolunteerDashboard());
+            break;
+          case "#/admin":
+            this.enforceRole("admin");
+            root.innerHTML = Views.renderShell("admin", Views.renderAdminDashboard());
+            break;
+          case "#/impact":
+            root.innerHTML = Views.renderShell("impact", Views.renderImpactCertificate());
+            break;
+          default:
+            window.location.hash = user ? `#/${user.role}` : "#/login";
+            break;
+        }
+      },
+
+      enforceRole(requiredRole) {
+        const user = this.state.currentUser;
+        if (user && user.role !== requiredRole && user.role !== "admin") {
+          this.toast(`Unauthorized access. Redirected to your ${user.role} dashboard.`, "tomato-orange");
+          window.location.hash = `#/${user.role}`;
+        }
+      },
+
+      login(email, password) {
+        try {
+          const btn = document.getElementById("login-submit-btn");
+          if (btn) btn.innerHTML = `<span>⏳</span> Logging in...`;
+
+          const sessionUser = api.login(email, password);
+          this.state.currentUser = sessionUser;
+          
+          this.playFruitDropAnimation("🍎", `Welcome back, ${sessionUser.name}!`, () => {
+            window.location.hash = `#/${sessionUser.role}`;
+          });
+        } catch (err) {
+          this.toast(err.message, "tomato-orange");
+          const btn = document.getElementById("login-submit-btn");
+          if (btn) btn.innerHTML = `Log In to Rescue Dashboard ➔`;
+        }
+      },
+
+      demoLogin(role) {
+        const user = this.state.users.find(u => u.role === role);
+        if (user) {
+          this.login(user.email, "demo123");
+        }
+      },
+
+      logout() {
+        this.state.currentUser = null;
+        DataLayer.save(this.state);
+        this.toast("Logged out successfully.", "leaf-green");
+        window.location.hash = "#/login";
+      },
+
+      toggleTheme() {
+        const current = document.documentElement.getAttribute("data-theme");
+        const next = current === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        this.state.theme = next;
+        DataLayer.save(this.state);
+      },
+
+      toggleLanguage() {
+        this.state.language = this.state.language === "en" ? "hi" : "en";
+        DataLayer.save(this.state);
+        this.route();
+        this.toast(`Language: ${this.state.language === 'en' ? 'English' : 'हिंदी'}`);
+      },
+
+      toast(msg, type = "leaf-green") {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        toast.className = "toast-item";
+        toast.style.borderLeft = `5px solid var(--${type})`;
+        toast.innerHTML = `<span>🌿</span><div style="font-weight:600;">${msg}</div>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4200);
+      },
+
+      playFruitDropAnimation(fruitEmoji, message, callback) {
+        const overlay = document.getElementById("fruit-drop-modal");
+        const icon = document.getElementById("dropping-fruit-icon");
+        const title = document.getElementById("fruit-drop-title");
+        if (icon) icon.innerText = fruitEmoji;
+        if (title) title.innerText = message;
+        if (overlay) {
+          overlay.classList.add("active");
+          setTimeout(() => {
+            overlay.classList.remove("active");
+            if (callback) callback();
+          }, 1100);
+        } else {
+          if (callback) callback();
+        }
+      },
+
+      openSafetyModal() {
+        document.getElementById("safety-guidelines-modal").classList.add("active");
+      },
+      closeSafetyModal() {
+        document.getElementById("safety-guidelines-modal").classList.remove("active");
+      },
+
+      openClaimModal(id) {
+        const item = this.state.listings.find(l => l.id === id);
+        if (!item) return;
+        this.pendingClaimId = id;
+        document.getElementById("claim-modal-title").innerText = item.foodName;
+        document.getElementById("claim-modal-donor").innerText = `From ${item.donorName}`;
+        document.getElementById("claim-modal-qty").innerText = `${item.quantity} ${item.unit}`;
+        document.getElementById("claim-modal-addr").innerText = item.address;
+        document.getElementById("claim-confirm-modal").classList.add("active");
+      },
+      closeClaimModal() {
+        document.getElementById("claim-confirm-modal").classList.remove("active");
+      },
+      confirmClaim() {
+        const opt = document.getElementById("claim-delivery-option").value;
+        const receiverName = this.state.currentUser.org || this.state.currentUser.name;
+        api.claimListing(this.pendingClaimId, receiverName, opt);
+        this.closeClaimModal();
+        this.toast(`Food reserved! ${opt === 'volunteer' ? 'Courier assigned for dispatch.' : 'Ready for self-pickup.'}`, "leaf-green");
+        this.route();
+      },
+
+      openRateModal() {
+        document.getElementById("rate-donor-modal").classList.add("active");
+      },
+      closeRateModal() {
+        document.getElementById("rate-donor-modal").classList.remove("active");
+      },
+      submitRating() {
+        this.closeRateModal();
+        this.toast("Thank you! Gratitude & 5-star rating delivered to donor kitchen.", "leaf-green");
+      },
+
+      initDonorTimer() {
+        const expInput = document.getElementById("post-food-exp");
+        if (expInput) {
+          const now = new Date();
+          const in3h = new Date(now.getTime() + 3.5 * 3600 * 1000);
+          const toISO = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          expInput.value = toISO(in3h);
+        }
+      },
+
+      /* Gentle canvas falling food animation for auth panel */
+      initFallingFruitAnimation() {
+        const canvas = document.getElementById("auth-canvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        let width = canvas.width = canvas.offsetWidth;
+        let height = canvas.height = canvas.offsetHeight;
+
+        const fruits = ["🍎", "🥭", "🥕", "🍞", "🍅", "🍇", "🥑"];
+        const particles = Array.from({ length: 9 }, () => ({
+          x: Math.random() * width,
+          y: Math.random() * height - height,
+          speed: 0.5 + Math.random() * 0.8,
+          char: fruits[Math.floor(Math.random() * fruits.length)],
+          size: 24 + Math.random() * 12
+        }));
+
+        function draw() {
+          ctx.clearRect(0, 0, width, height);
+          particles.forEach(p => {
+            p.y += p.speed;
+            if (p.y > height) {
+              p.y = -40;
+              p.x = Math.random() * width;
+            }
+            ctx.font = `${p.size}px sans-serif`;
+            ctx.fillText(p.char, p.x, p.y);
+          });
+          requestAnimationFrame(draw);
+        }
+        draw();
+      }
+    };
+
+    /* ==========================================================================
+       D. VIEW TEMPLATES (HTML Markup Generator)
+       ========================================================================== */
+    const Views = {
+      selectedSignupRole: "donor",
+
+      // 1. LOGIN VIEW
+      renderLogin() {
+        return `
+          <div class="auth-split-wrapper">
+            <!-- Left Illustrated Panel -->
+            <div class="auth-illustration-side">
+              <canvas id="auth-canvas" class="falling-food-canvas"></canvas>
+              <div style="position:relative; z-index:2;">
+                <div class="brand-link" style="font-size:2rem; margin-bottom:0.5rem;">
+                  <span>🌿</span> FoodBridge
+                </div>
+                <p style="font-family:var(--font-heading); font-size:1.15rem; color:var(--text-muted); max-width:380px;">
+                  Every meal saved is a bridge built between abundance and community care.
+                </p>
+              </div>
+
+              <!-- Hand-Woven Bamboo Basket Graphic -->
+              <div style="position:relative; z-index:2; text-align:center;">
+                <svg viewBox="0 0 240 140" width="220" height="130">
+                  <ellipse cx="120" cy="40" rx="90" ry="22" fill="#8C652D"/>
+                  <path d="M30 40 C30 100, 60 125, 120 125 C180 125, 210 100, 210 40 Z" fill="#C9A66B" stroke="#8C652D" stroke-width="4"/>
+                  <path d="M50 45 C55 90, 80 115, 120 115 C160 115, 185 90, 190 45" stroke="#8C652D" stroke-width="2.5" fill="none"/>
+                  <ellipse cx="120" cy="40" rx="90" ry="20" fill="none" stroke="#E3C792" stroke-width="5"/>
+                </svg>
+                <div style="font-family:var(--font-heading); font-weight:700; font-size:0.88rem; color:var(--bamboo-dark); margin-top:0.5rem;">
+                  🧺 Bamboo Collective Rescue Basket
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Login Form Card -->
+            <div class="auth-form-side">
+              <div class="card auth-card">
+                <span class="badge badge-available" style="margin-bottom:0.75rem;">Platform Access</span>
+                <h1 style="font-size:2.2rem; margin-bottom:0.35rem;">Welcome Back</h1>
+                <p style="font-size:0.95rem; color:var(--text-muted); margin-bottom:1.5rem;">
+                  Log in to manage your surplus listings, claims, and delivery tasks.
+                </p>
+
+                <form onsubmit="event.preventDefault(); App.login(document.getElementById('login-email').value, document.getElementById('login-pass').value);">
+                  <div class="form-group">
+                    <label class="form-label" for="login-email">Email Address</label>
+                    <input type="email" id="login-email" class="form-control" required placeholder="donor@meghna.in" value="donor@meghna.in">
+                  </div>
+
+                  <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                      <label class="form-label" for="login-pass" style="margin:0;">Password</label>
+                      <a href="javascript:void(0)" onclick="App.toast('Demo mode: click a demo shortcut below')" style="font-size:0.8rem; color:var(--leaf-green); font-weight:700;">Forgot password?</a>
+                    </div>
+                    <div style="position:relative;">
+                      <input type="password" id="login-pass" class="form-control" required placeholder="••••••••" value="demo123">
+                      <button type="button" onclick="const p = document.getElementById('login-pass'); p.type = p.type==='password'?'text':'password';" style="position:absolute; right:12px; top:12px; background:none; border:none; cursor:pointer;" aria-label="Toggle Password Visibility">👁️</button>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+                    <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+                      <input type="checkbox" checked> Remember me
+                    </label>
+                  </div>
+
+                  <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width:100%; margin-bottom:0.75rem;">Log In to Rescue Dashboard ➔</button>
+                  <button type="button" class="btn btn-secondary" style="width:100%;" onclick="App.toast('Google OAuth is mock UI only for demo');">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                    Continue with Google
+                  </button>
+                </form>
+
+                <!-- 1-Click Demo Shortcut Panel -->
+                <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--border-color); text-align:center;">
+                  <div style="font-family:var(--font-heading); font-weight:700; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.6rem;">⚡ 1-CLICK DEMO SHORTCUTS</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:0.4rem; justify-content:center;">
+                    <button class="btn btn-secondary btn-sm" onclick="App.demoLogin('donor')">👨‍🍳 Donor</button>
+                    <button class="btn btn-secondary btn-sm" onclick="App.demoLogin('receiver')">🏢 Receiver</button>
+                    <button class="btn btn-secondary btn-sm" onclick="App.demoLogin('volunteer')">🚴 Volunteer</button>
+                    <button class="btn btn-secondary btn-sm" onclick="App.demoLogin('admin')">👑 Admin</button>
+                  </div>
+                </div>
+
+                <div style="text-align:center; margin-top:1.25rem; font-size:0.9rem;">
+                  New to FoodBridge? <a href="#/signup" style="font-weight:700; color:var(--leaf-green);">Create an account ➔</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      // 2. SIGNUP VIEW
+      renderSignup() {
+        return `
+          <div class="auth-split-wrapper">
+            <div class="auth-illustration-side">
+              <canvas id="auth-canvas" class="falling-food-canvas"></canvas>
+              <div>
+                <div class="brand-link" style="font-size:2rem; margin-bottom:0.5rem;"><span>🌿</span> FoodBridge</div>
+                <p style="font-family:var(--font-heading); font-size:1.15rem; color:var(--text-muted);">
+                  Join our verified ecosystem of hunger relief and zero food waste.
+                </p>
+              </div>
+            </div>
+
+            <div class="auth-form-side">
+              <div class="card auth-card">
+                <span class="badge badge-available" style="margin-bottom:0.5rem;">Register Account</span>
+                <h1 style="font-size:2rem; margin-bottom:0.35rem;">Choose Your Role</h1>
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.25rem;">
+                  Select how you want to participate in the rescue network:
+                </p>
+
+                <!-- Role Picker: 3 Cards (Admin is not selectable at signup) -->
+                <div class="role-picker-grid">
+                  <div class="role-card-btn selected" id="picker-donor" onclick="Views.selectSignupRole('donor')">
+                    <span style="font-size:1.6rem;">👨‍🍳</span>
+                    <strong style="font-size:0.85rem;">Donor</strong>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">Restaurant/Farm/Caterer</span>
+                  </div>
+                  <div class="role-card-btn" id="picker-receiver" onclick="Views.selectSignupRole('receiver')">
+                    <span style="font-size:1.6rem;">🏢</span>
+                    <strong style="font-size:0.85rem;">Receiver</strong>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">NGO / Shelter / Kitchen</span>
+                  </div>
+                  <div class="role-card-btn" id="picker-volunteer" onclick="Views.selectSignupRole('volunteer')">
+                    <span style="font-size:1.6rem;">🚴</span>
+                    <strong style="font-size:0.85rem;">Volunteer</strong>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">Delivery Courier</span>
+                  </div>
+                </div>
+
+                <form onsubmit="Views.handleSignupSubmit(event)">
+                  <div class="form-group">
+                    <label class="form-label">Full Name / Primary Contact *</label>
+                    <input type="text" id="reg-name" class="form-control" required placeholder="Chef Alex or Sister Maria">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" id="reg-email" class="form-control" required placeholder="contact@organization.in">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Organization Name *</label>
+                    <input type="text" id="reg-org" class="form-control" required placeholder="e.g. Green Valley Dining">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Operating City &amp; Area *</label>
+                    <input type="text" id="reg-area" class="form-control" required placeholder="e.g. Indiranagar, Bengaluru">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Phone Number *</label>
+                    <input type="tel" id="reg-phone" class="form-control" required placeholder="+91 98450 11223">
+                  </div>
+
+                  <!-- Dynamic Role Specific Fields -->
+                  <div id="dynamic-role-fields">
+                    <div class="form-group">
+                      <label class="form-label">Donor Type *</label>
+                      <select id="reg-donor-type" class="form-control">
+                        <option value="Restaurant">Restaurant / Café</option>
+                        <option value="Grocery">Grocery / Supermarket</option>
+                        <option value="Farm">Farm / Harvest Producer</option>
+                        <option value="Caterer">Event Caterer / Banquet</option>
+                        <option value="Household">Household / Community</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Password *</label>
+                    <input type="password" id="reg-pass" class="form-control" required placeholder="Minimum 6 characters" oninput="Views.checkPasswordStrength(this.value)">
+                    <div class="strength-meter-bar">
+                      <div id="strength-meter-fill" class="strength-meter-fill"></div>
+                    </div>
+                    <div id="strength-meter-text" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">Password strength: Weak</div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Confirm Password *</label>
+                    <input type="password" id="reg-pass-confirm" class="form-control" required placeholder="Repeat password" oninput="Views.checkPasswordMatch()">
+                    <div id="pass-match-error" style="font-size:0.75rem; color:var(--tomato-orange); display:none; margin-top:0.2rem;">Passwords do not match</div>
+                  </div>
+
+                  <button type="submit" id="reg-submit-btn" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Complete Registration ➔</button>
+                </form>
+
+                <div style="text-align:center; margin-top:1.25rem; font-size:0.9rem;">
+                  Already registered? <a href="#/login" style="font-weight:700; color:var(--leaf-green);">Log in here</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      selectSignupRole(role) {
+        document.querySelectorAll(".role-card-btn").forEach(b => b.classList.remove("selected"));
+        document.getElementById(`picker-${role}`).classList.add("selected");
+        this.selectedSignupRole = role;
+
+        const dyn = document.getElementById("dynamic-role-fields");
+        if (role === "receiver") {
+          dyn.innerHTML = `
+            <div class="form-group">
+              <label class="form-label">Estimated People Served Daily *</label>
+              <input type="number" id="reg-people" class="form-control" value="120" min="1" placeholder="e.g. 150">
+            </div>
+          `;
+        } else if (role === "volunteer") {
+          dyn.innerHTML = `
+            <div class="form-group">
+              <label class="form-label">Vehicle Type for Rescues *</label>
+              <select id="reg-vehicle" class="form-control">
+                <option value="Bicycle">Bicycle (Eco Friendly)</option>
+                <option value="Scooter / Bike" selected>Scooter / Two-Wheeler</option>
+                <option value="Car / Van">Car / Van (Bulk Rescue)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Availability Hours *</label>
+              <input type="text" id="reg-avail" class="form-control" value="Weekdays 3 PM - 8 PM" placeholder="e.g. Evenings & Weekends">
+            </div>
+          `;
+        } else {
+          dyn.innerHTML = `
+            <div class="form-group">
+              <label class="form-label">Donor Type *</label>
+              <select id="reg-donor-type" class="form-control">
+                <option value="Restaurant">Restaurant / Café</option>
+                <option value="Grocery">Grocery / Supermarket</option>
+                <option value="Farm">Farm / Harvest Producer</option>
+                <option value="Caterer">Event Caterer / Banquet</option>
+                <option value="Household">Household / Community</option>
+              </select>
+            </div>
+          `;
+        }
+      },
+
+      checkPasswordStrength(val) {
+        const fill = document.getElementById("strength-meter-fill");
+        const txt = document.getElementById("strength-meter-text");
+        if (!fill || !txt) return;
+
+        let score = 0;
+        if (val.length >= 6) score++;
+        if (/[A-Z]/.test(val) || /[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val) && val.length >= 8) score++;
+
+        if (score === 0) {
+          fill.style.width = "20%"; fill.style.background = "#E8643C"; txt.innerText = "Password strength: Weak";
+        } else if (score === 1) {
+          fill.style.width = "50%"; fill.style.background = "#F2B33D"; txt.innerText = "Password strength: Medium";
+        } else {
+          fill.style.width = "100%"; fill.style.background = "#2F5D3A"; txt.innerText = "Password strength: Strong";
+        }
+      },
+
+      checkPasswordMatch() {
+        const p1 = document.getElementById("reg-pass")?.value;
+        const p2 = document.getElementById("reg-pass-confirm")?.value;
+        const err = document.getElementById("pass-match-error");
+        if (err) {
+          err.style.display = (p1 && p2 && p1 !== p2) ? "block" : "none";
+        }
+      },
+
+      handleSignupSubmit(e) {
+        e.preventDefault();
+        const p1 = document.getElementById("reg-pass").value;
+        const p2 = document.getElementById("reg-pass-confirm").value;
+        if (p1 !== p2) {
+          App.toast("Passwords do not match. Please verify.", "tomato-orange");
+          return;
+        }
+
+        const role = this.selectedSignupRole || "donor";
+        const btn = document.getElementById("reg-submit-btn");
+        if (btn) btn.innerHTML = `<span>⏳</span> Creating account...`;
+
+        const newUser = api.signup({
+          name: document.getElementById("reg-name").value,
+          email: document.getElementById("reg-email").value,
+          org: document.getElementById("reg-org").value,
+          area: document.getElementById("reg-area").value,
+          phone: document.getElementById("reg-phone").value,
+          role: role,
+          peopleServed: document.getElementById("reg-people") ? Number(document.getElementById("reg-people").value) : null,
+          vehicle: document.getElementById("reg-vehicle") ? document.getElementById("reg-vehicle").value : null
+        });
+
+        App.state.currentUser = newUser;
+        App.playFruitDropAnimation("🥭", `Welcome to FoodBridge, ${newUser.name}!`, () => {
+          window.location.hash = `#/${newUser.role}`;
+        });
+      },
+
+      // 3. SHARED APPLICATION SHELL
+      renderShell(activeRole, mainContentHtml) {
+        const user = App.state.currentUser || { name: "Guest", role: "donor" };
+        const lang = I18N[App.state.language || "en"];
+
+        // Role-customized navigation menus
+        const roleNavMap = {
+          donor: [
+            { href: "#/donor", label: "👨‍🍳 Donor Overview", key: "donor" },
+            { href: "#/impact", label: "🌟 Impact Certificate", key: "impact" }
+          ],
+          receiver: [
+            { href: "#/receiver", label: "🏢 Find Food & Claims", key: "receiver" },
+            { href: "#/impact", label: "🌟 Impact Certificate", key: "impact" }
+          ],
+          volunteer: [
+            { href: "#/volunteer", label: "🚴 Deliveries & Tasks", key: "volunteer" },
+            { href: "#/impact", label: "🌟 Impact Certificate", key: "impact" }
+          ],
+          admin: [
+            { href: "#/admin", label: "👑 Admin Console", key: "admin" },
+            { href: "#/donor", label: "👨‍🍳 Donor View", key: "donor" },
+            { href: "#/receiver", label: "🏢 Receiver View", key: "receiver" },
+            { href: "#/volunteer", label: "🚴 Courier View", key: "volunteer" }
+          ]
+        };
+
+        const currentNav = roleNavMap[user.role] || roleNavMap.donor;
+
+        return `
+          <div class="app-shell">
+            <!-- Sticky Header -->
+            <header class="app-header">
+              <div style="display:flex; align-items:center; gap:1.25rem;">
+                <a href="#/${user.role}" class="brand-link">
+                  <span>🌿</span> FoodBridge
+                </a>
+                <span class="badge badge-available">${lang[user.role] || user.role}</span>
+              </div>
+
+              <!-- Center Basket Impact Counter -->
+              <div class="shell-stats-pill">
+                <span>🧺</span>
+                <span><strong>128</strong> ${lang.mealsRescued}</span>
+              </div>
+
+              <!-- Header Right Actions -->
+              <div style="display:flex; align-items:center; gap:0.6rem;">
+                <!-- Language Toggle -->
+                <button class="btn btn-secondary btn-sm" onclick="App.toggleLanguage()">
+                  🌐 ${App.state.language === 'en' ? 'हिन्दी' : 'EN'}
+                </button>
+
+                <!-- Theme Toggle -->
+                <button class="btn btn-icon btn-sm" onclick="App.toggleTheme()" aria-label="Toggle Theme">
+                  🌙
+                </button>
+
+                <!-- Notification Bell -->
+                <div class="dropdown-container">
+                  <button class="btn btn-icon btn-sm" onclick="document.getElementById('notif-menu').classList.toggle('active')" aria-label="Notifications">
+                    🔔 <span style="position:absolute; top:4px; right:4px; width:8px; height:8px; background:var(--tomato-orange); border-radius:50%;"></span>
+                  </button>
+                  <div class="dropdown-menu" id="notif-menu">
+                    <strong style="font-size:0.85rem; padding:0.25rem 0.5rem; border-bottom:1px solid var(--border-color);">Recent Alerts</strong>
+                    ${App.state.notifications.map(n => `
+                      <div style="padding:0.4rem 0.5rem; font-size:0.8rem; border-radius:var(--radius-sm); background:${n.read ? 'transparent' : 'var(--bg-subtle)'}">
+                        <div>${n.text}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">${n.time}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- User Profile Menu -->
+                <div class="dropdown-container">
+                  <button class="btn btn-secondary btn-sm" onclick="document.getElementById('profile-menu').classList.toggle('active')">
+                    👤 ${user.name.split(' ')[0]} ▼
+                  </button>
+                  <div class="dropdown-menu" id="profile-menu">
+                    <div style="padding:0.4rem 0.5rem; border-bottom:1px solid var(--border-color);">
+                      <strong>${user.name}</strong>
+                      <div style="font-size:0.75rem; color:var(--text-muted);">${user.email} &bull; ${user.org}</div>
+                    </div>
+                    <a href="#/impact" class="btn btn-secondary btn-sm" style="width:100%; justify-content:flex-start;">🌟 My Impact Card</a>
+                    <button class="btn btn-secondary btn-sm" style="width:100%; justify-content:flex-start;" onclick="App.openSafetyModal()">🛡️ Safety Guidelines</button>
+                    <button class="btn btn-secondary btn-sm" style="width:100%; justify-content:flex-start;" onclick="DataLayer.reset(); window.location.reload();">🔄 Reset Demo Data</button>
+                    <button class="btn btn-tomato btn-sm" style="width:100%; justify-content:flex-start;" onclick="App.logout()">🚪 Log Out</button>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <div class="app-body">
+              <!-- Desktop Sidebar Navigation -->
+              <aside class="app-sidebar">
+                <div>
+                  <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); margin-bottom:0.75rem; text-transform:uppercase;">Role Navigation</div>
+                  <ul class="sidebar-menu">
+                    ${currentNav.map(item => `
+                      <li class="sidebar-item">
+                        <a href="${item.href}" class="${activeRole === item.key ? 'active' : ''}">${item.label}</a>
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+
+                <div class="card" style="padding:0.9rem; background:var(--bg-subtle); text-align:center;">
+                  <div style="font-size:1.4rem;">🌱</div>
+                  <div style="font-size:0.8rem; font-weight:700;">Zero Food Waste</div>
+                  <div style="font-size:0.72rem; color:var(--text-muted);">Bengaluru Relief Chapter</div>
+                </div>
+              </aside>
+
+              <!-- Main Dashboard Area -->
+              <main class="app-main">
+                ${mainContentHtml}
+              </main>
+            </div>
+
+            <!-- Mobile Bottom Tab Bar -->
+            <nav class="mobile-tab-bar">
+              ${currentNav.map(item => `
+                <a href="${item.href}" class="mobile-tab-item ${activeRole === item.key ? 'active' : ''}">
+                  <span>${item.label.split(' ')[0]}</span>
+                  <span>${item.label.split(' ')[1] || 'Hub'}</span>
+                </a>
+              `).join('')}
+            </nav>
+          </div>
+        `;
+      },
+
+      // 4. DONOR DASHBOARD VIEW
+      renderDonorDashboard() {
+        return `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+              <div>
+                <h1 style="font-size:2.2rem;">Donor Dashboard</h1>
+                <p style="color:var(--text-muted); font-size:0.95rem;">Manage fresh surplus meals, schedule recurring pickups, and monitor dispatch.</p>
+              </div>
+              <button class="btn btn-primary" onclick="document.getElementById('post-food-section').scrollIntoView({behavior:'smooth'})">
+                + Post New Surplus Food
+              </button>
+            </div>
+
+            <!-- Stat Cards Row -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:2rem;">
+              <div class="card" style="border-left:4px solid var(--leaf-green);">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Meals Donated</div>
+                <div style="font-size:1.8rem; font-weight:700; color:var(--leaf-green);">340</div>
+              </div>
+              <div class="card" style="border-left:4px solid var(--mustard);">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Food Waste Avoided</div>
+                <div style="font-size:1.8rem; font-weight:700; color:var(--mustard-dark);">136 kg</div>
+              </div>
+              <div class="card" style="border-left:4px solid var(--tomato-orange);">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Active Listings</div>
+                <div style="font-size:1.8rem; font-weight:700; color:var(--tomato-orange);">${App.state.listings.filter(l => l.status === 'available').length}</div>
+              </div>
+              <div class="card" style="border-left:4px solid #8B5CF6;">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">People Helped</div>
+                <div style="font-size:1.8rem; font-weight:700; color:#8B5CF6;">480 People</div>
+              </div>
+            </div>
+
+            <!-- SVG 6-Week Donations Bar Chart -->
+            <div class="card" style="margin-bottom:2rem;">
+              <h3 style="font-size:1.25rem; margin-bottom:1rem;">Donation Volume (Past 6 Weeks)</h3>
+              <div style="background:var(--bg-subtle); padding:1rem; border-radius:var(--radius-md);">
+                <svg viewBox="0 0 450 90" width="100%" height="90">
+                  <rect x="20" y="35" width="35" height="45" rx="5" fill="#2F5D3A"/>
+                  <text x="37" y="25" text-anchor="middle" font-size="10" fill="var(--forest-text)">45</text>
+                  <text x="37" y="90" text-anchor="middle" font-size="9" fill="var(--text-muted)">Wk 1</text>
+
+                  <rect x="90" y="20" width="35" height="60" rx="5" fill="#2F5D3A"/>
+                  <text x="107" y="12" text-anchor="middle" font-size="10" fill="var(--forest-text)">65</text>
+                  <text x="107" y="90" text-anchor="middle" font-size="9" fill="var(--text-muted)">Wk 2</text>
+
+                  <rect x="160" y="40" width="35" height="40" rx="5" fill="#2F5D3A"/>
+                  <text x="177" y="30" text-anchor="middle" font-size="10" fill="var(--forest-text)">38</text>
+                  <text x="177" y="90" text-anchor="middle" font-size="9" fill="var(--text-muted)">Wk 3</text>
+
+                  <rect x="230" y="15" width="35" height="65" rx="5" fill="#F2B33D"/>
+                  <text x="247" y="10" text-anchor="middle" font-size="10" fill="var(--forest-text)">72</text>
+                  <text x="247" y="90" text-anchor="middle" font-size="9" fill="var(--text-muted)">Wk 4</text>
+
+                  <rect x="300" y="30" width="35" height="50" rx="5" fill="#2F5D3A"/>
+                  <text x="317" y="20" text-anchor="middle" font-size="10" fill="var(--forest-text)">50</text>
+                  <text x="317" y="90" text-anchor="middle" font-size="9" fill="var(--text-muted)">Wk 5</text>
+
+                  <rect x="370" y="10" width="35" height="70" rx="5" fill="#E8643C"/>
+                  <text x="387" y="8" text-anchor="middle" font-size="10" fill="var(--forest-text)">80</text>
+                  <text x="387" y="90" text-anchor="middle" font-size="9" fill="var(--text-muted)">Wk 6</text>
+                </svg>
+              </div>
+            </div>
+
+            <!-- "Post Surplus Food" Form Card -->
+            <div class="card" id="post-food-section" style="margin-bottom:2.5rem; background:var(--bg-surface); border:2px solid var(--leaf-green-alpha);">
+              <span class="badge badge-available" style="margin-bottom:0.5rem;">New Food Rescue Entry</span>
+              <h2 style="font-size:1.75rem; margin-bottom:1rem;">Post Surplus Food</h2>
+
+              <form onsubmit="Views.handlePostListingSubmit(event)">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                  <div class="form-group">
+                    <label class="form-label">Food Item Title *</label>
+                    <input type="text" id="post-food-name" class="form-control" required placeholder="e.g. 50 Servings Dal Makhani & Jeera Rice">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Category *</label>
+                    <select id="post-food-cat" class="form-control">
+                      <option value="cooked">Cooked Hot Meal</option>
+                      <option value="produce">Raw Fresh Produce</option>
+                      <option value="bakery">Bakery &amp; Bread</option>
+                      <option value="packaged">Packaged Goods</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                  <div class="form-group">
+                    <label class="form-label">Quantity &amp; Portions *</label>
+                    <input type="number" id="post-food-qty" class="form-control" required value="40" min="1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Measurement Unit</label>
+                    <select id="post-food-unit" class="form-control">
+                      <option value="servings">Servings / Meals</option>
+                      <option value="kg">Kilograms (kg)</option>
+                      <option value="boxes">Boxes / Packets</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                  <div class="form-group">
+                    <label class="form-label">Pickup Address *</label>
+                    <input type="text" id="post-food-addr" class="form-control" required value="100ft Road, Indiranagar, Bengaluru">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Safe-To-Consume Until (Best Before) *</label>
+                    <input type="datetime-local" id="post-food-exp" class="form-control" required oninput="Views.updateFreshnessTimer(this.value)">
+                  </div>
+                </div>
+
+                <!-- Live Freshness Timer Display -->
+                <div style="background:var(--bg-subtle); padding:0.85rem 1.25rem; border-radius:var(--radius-md); margin-bottom:1rem; display:flex; align-items:center; gap:1rem;">
+                  <svg class="expiry-ring-svg" viewBox="0 0 60 60">
+                    <circle class="expiry-ring-bg" cx="30" cy="30" r="25"/>
+                    <circle id="freshness-ring-fg" class="expiry-ring-fg" cx="30" cy="30" r="25" stroke="#2F5D3A" stroke-dasharray="157" stroke-dashoffset="30"/>
+                  </svg>
+                  <div>
+                    <div id="freshness-timer-text" style="font-family:var(--font-heading); font-weight:700; color:var(--leaf-green); font-size:1.1rem;">
+                      3h 30m safe window
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">Freshness timer: alert broadcasts when window reaches under 2 hours.</div>
+                  </div>
+                </div>
+
+                <!-- Dietary & Safety Tags -->
+                <div class="form-group">
+                  <label class="form-label">Dietary &amp; Safety Tags</label>
+                  <div style="display:flex; flex-wrap:wrap; gap:0.6rem;">
+                    <label><input type="checkbox" checked value="veg"> Vegetarian</label>
+                    <label><input type="checkbox" value="vegan"> Vegan</label>
+                    <label><input type="checkbox" value="halal"> Halal</label>
+                    <label><input type="checkbox" value="nuts"> Contains Nuts</label>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">
+                  🚀 Dispatch Surplus Listing &amp; Notify Nearby Receivers ➔
+                </button>
+              </form>
+            </div>
+
+            <!-- My Active Listings -->
+            <h2 style="font-size:1.6rem; margin-bottom:1rem;">My Active Listings</h2>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1.25rem; margin-bottom:2.5rem;">
+              ${App.state.listings.map(l => `
+                <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                      <span class="badge badge-${l.status}">${l.status}</span>
+                      <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">${l.id}</span>
+                    </div>
+                    <h3 style="font-size:1.2rem; margin-bottom:0.4rem;">${l.foodName}</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                      📦 ${l.quantity} ${l.unit} &bull; 📍 ${l.address}
+                    </p>
+                    ${l.claimedBy ? `<div style="font-size:0.8rem; font-weight:700; color:var(--leaf-green);">🏢 Claimed by: ${l.claimedBy}</div>` : ''}
+                    ${l.volunteerId ? `<div style="font-size:0.8rem; font-weight:700; color:var(--mustard-dark);">🚴 Courier: ${l.volunteerId}</div>` : ''}
+                  </div>
+
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--border-color);">
+                    <button class="btn btn-secondary btn-sm" onclick="App.toast('Downloadable CSR report generated for ${l.id}')">🖨️ CSR Receipt</button>
+                    ${l.status === 'available' ? `<button class="btn btn-tomato btn-sm" onclick="Views.cancelListing('${l.id}')">Cancel</button>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Recurring Weekly Surplus Pickups Card -->
+            <div class="card" style="background:var(--bg-subtle);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+                <h3 style="font-size:1.25rem;">Recurring Weekly Surplus Schedule</h3>
+                <span class="badge badge-available">Automated Pickup</span>
+              </div>
+              <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:1rem;">
+                Automate regular bulk surplus from recurring buffet dining, student canteens, and daily catering.
+              </p>
+              <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+                <label><input type="checkbox" checked> Every Monday 4:00 PM</label>
+                <label><input type="checkbox" checked> Every Thursday 4:00 PM</label>
+                <label><input type="checkbox"> Every Saturday 9:30 PM</label>
+                <button class="btn btn-secondary btn-sm" onclick="App.toast('Recurring schedule updated for campus courier dispatch.')">Save Schedule</button>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      updateFreshnessTimer(expVal) {
+        if (!expVal) return;
+        const diffMs = new Date(expVal).getTime() - Date.now();
+        const hrs = Math.max(0, Math.floor(diffMs / (3600 * 1000)));
+        const mins = Math.max(0, Math.floor((diffMs % (3600 * 1000)) / (60 * 1000)));
+        const txt = document.getElementById("freshness-timer-text");
+        if (txt) {
+          txt.innerText = `${hrs}h ${mins}m safe window`;
+          txt.style.color = hrs < 2 ? "var(--tomato-orange)" : "var(--leaf-green)";
+        }
+      },
+
+      handlePostListingSubmit(e) {
+        e.preventDefault();
+        const newListing = api.createListing({
+          foodName: document.getElementById('post-food-name').value,
+          category: document.getElementById('post-food-cat').value,
+          quantity: document.getElementById('post-food-qty').value,
+          unit: document.getElementById('post-food-unit').value,
+          address: document.getElementById('post-food-addr').value,
+          expiresAt: document.getElementById('post-food-exp').value || new Date(Date.now() + 3.5 * 3600 * 1000).toISOString()
+        });
+
+        // Smart matching notification
+        App.toast(`Listing ${newListing.id} posted! 3 nearby receivers notified: Robin Hood Army (1.8km), Asha Kiran (3.2km), St. Jude (4.1km)`, "leaf-green");
+        App.route();
+      },
+
+      cancelListing(id) {
+        api.updateStatus(id, "expired");
+        App.toast("Listing cancelled.", "tomato-orange");
+        App.route();
+      },
+
+      // 5. RECEIVER DASHBOARD VIEW
+      renderReceiverDashboard() {
+        const available = App.state.listings.filter(l => l.status === "available");
+        const claimedByMe = App.state.listings.filter(l => l.claimedBy && l.status !== "available");
+
+        return `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+              <div>
+                <h1 style="font-size:2.2rem;">Receiver Shelter Hub</h1>
+                <p style="color:var(--text-muted); font-size:0.95rem;">Claim surplus meals nearby, track courier arrivals, and post standing shelter food requirements.</p>
+              </div>
+            </div>
+
+            <!-- Stylised Interactive SVG Map Visualizer -->
+            <div class="mock-map-container">
+              <div style="position:absolute; top:12px; left:16px; background:var(--bg-surface); padding:0.4rem 0.85rem; border-radius:var(--radius-full); font-size:0.75rem; font-weight:700; box-shadow:var(--shadow-sm); z-index:5;">
+                🗺️ Live Bengaluru Rescue Grid (Pins = Available Food)
+              </div>
+              <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="none">
+                <path d="M0 30 Q30 50 60 20 T100 40" stroke="#CBD5E1" stroke-width="2" fill="none"/>
+                <path d="M20 0 Q40 60 70 80 T90 100" stroke="#CBD5E1" stroke-width="2" fill="none"/>
+                <circle cx="50" cy="50" r="40" stroke="rgba(47,93,58,0.2)" stroke-width="1" stroke-dasharray="2 2" fill="none"/>
+                
+                ${available.map(l => `
+                  <g style="cursor:pointer;" onclick="App.openClaimModal('${l.id}')">
+                    <circle cx="${l.coords.x}" cy="${l.coords.y}" r="4" fill="#E8643C"/>
+                    <circle cx="${l.coords.x}" cy="${l.coords.y}" r="8" fill="rgba(232,100,60,0.3)"/>
+                    <text x="${l.coords.x}" y="${l.coords.y - 6}" font-size="4" font-weight="bold" text-anchor="middle" fill="#1F3326">${l.quantity} meals</text>
+                  </g>
+                `).join('')}
+              </svg>
+            </div>
+
+            <!-- Available Food Listings Grid -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+              <h2 style="font-size:1.6rem;">Available Nearby Food for Rescue</h2>
+              <div style="font-size:0.85rem; color:var(--text-muted);">Sorted by Expiry Urgency</div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1.25rem; margin-bottom:3rem;">
+              ${available.length === 0 ? `<div class="card" style="grid-column:1/-1; text-align:center;">No available listings right now.</div>` : ''}
+              ${available.map(l => `
+                <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                      <span class="badge badge-available">● Available</span>
+                      <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">📍 ${l.distanceKm} km away</span>
+                    </div>
+                    <h3 style="font-size:1.2rem; margin-bottom:0.35rem;">${l.foodName}</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
+                      🏢 ${l.donorName} &bull; 📦 ${l.quantity} ${l.unit}
+                    </p>
+                  </div>
+
+                  <div style="border-top:1px solid var(--border-color); padding-top:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:0.8rem; font-weight:700; color:var(--tomato-orange);">⏳ Freshness Safe</div>
+                    <button class="btn btn-primary btn-sm" onclick="App.openClaimModal('${l.id}')">Claim Food ➔</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- My Claims & Delivery Tracker -->
+            <h2 style="font-size:1.6rem; margin-bottom:1rem;">My Active Claims &amp; In-Transit Food</h2>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1.25rem; margin-bottom:3rem;">
+              ${claimedByMe.length === 0 ? `<div class="card" style="grid-column:1/-1; text-align:center;">No active claims in progress.</div>` : ''}
+              ${claimedByMe.map(c => `
+                <div class="card" style="border:2px solid var(--mustard);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <span class="badge badge-${c.status}">${c.status}</span>
+                    <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">${c.id}</span>
+                  </div>
+                  <h3 style="font-size:1.2rem; margin-bottom:0.35rem;">${c.foodName}</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                    📍 ${c.donorName} &bull; Courier: <strong>${c.volunteerId || 'Awaiting assignment'}</strong>
+                  </p>
+
+                  <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                    <button class="btn btn-primary btn-sm" style="flex:1;" onclick="App.openRateModal()">✓ Mark Received &amp; Rate</button>
+                    <button class="btn btn-secondary btn-sm" onclick="App.toast('Report sent to coordinator.')">Report Issue</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Standing Need Requests Board -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <h2 style="font-size:1.6rem;">Shelter Standing Needs</h2>
+              <button class="btn btn-secondary btn-sm" onclick="Views.postNeedPrompt()">+ Post Need Request</button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1rem;">
+              ${App.state.needs.map(n => `
+                <div class="card" style="border-left:4px solid var(--mustard);">
+                  <strong style="font-size:1.1rem; display:block; margin-bottom:0.3rem;">${n.title}</strong>
+                  <div style="font-size:0.85rem; color:var(--text-muted);">🍲 Need: ${n.quantity} Meals &bull; Deadline: ${n.deadline}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      },
+
+      postNeedPrompt() {
+        const title = prompt("Enter standing requirement (e.g. Cooked meals for 60 people, daily at 6pm):");
+        if (title) {
+          api.postNeed({ title: title, quantity: 60 });
+          App.toast("Standing need request published!", "leaf-green");
+          App.route();
+        }
+      },
+
+      // 6. VOLUNTEER DASHBOARD VIEW
+      renderVolunteerDashboard() {
+        const activeTasks = App.state.listings.filter(l => l.status === "claimed");
+        return `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+              <div>
+                <h1 style="font-size:2.2rem;">Volunteer Courier Portal</h1>
+                <p style="color:var(--text-muted); font-size:0.95rem;">Pick up surplus food from donors and safely transit to verified shelters.</p>
+              </div>
+
+              <!-- On Duty Switch -->
+              <label style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-surface); padding:0.5rem 1rem; border-radius:var(--radius-full); border:1px solid var(--border-color); font-weight:700; cursor:pointer;">
+                <input type="checkbox" checked onchange="App.toast(this.checked ? 'Status: ON DUTY' : 'Status: OFF DUTY')">
+                <span style="color:var(--leaf-green);">🟢 On Duty (Ready for Pickups)</span>
+              </label>
+            </div>
+
+            <!-- Active Dispatches -->
+            <h2 style="font-size:1.6rem; margin-bottom:1rem;">Active Dispatch Tasks</h2>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:1.25rem; margin-bottom:3rem;">
+              ${activeTasks.length === 0 ? `<div class="card" style="grid-column:1/-1; text-align:center;">No pending pickup dispatches. All tasks clear!</div>` : ''}
+              ${activeTasks.map(l => `
+                <div class="card" style="border:2px solid var(--mustard);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <span class="badge badge-claimed">Pickup Assigned</span>
+                    <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">${l.distanceKm} km</span>
+                  </div>
+                  <h3 style="font-size:1.2rem; margin-bottom:0.35rem;">${l.foodName}</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                    📍 <strong>Pickup:</strong> ${l.donorName} (${l.address})<br>
+                    🏢 <strong>Drop-off:</strong> ${l.claimedBy}
+                  </p>
+
+                  <!-- Safety Checklist -->
+                  <div style="background:var(--bg-subtle); padding:0.65rem; border-radius:var(--radius-sm); font-size:0.8rem; margin-bottom:0.75rem;">
+                    <label style="display:block;"><input type="checkbox" checked> Container sealed &amp; hygienic</label>
+                    <label style="display:block;"><input type="checkbox" checked> Insulated bag temperature checked</label>
+                  </div>
+
+                  <button class="btn btn-primary btn-sm" style="width:100%;" onclick="Views.completeDelivery('${l.id}')">
+                    ✓ Confirm Delivered to Shelter Hub ➔
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Volunteer Badges & Stats -->
+            <h2 style="font-size:1.6rem; margin-bottom:1rem;">Volunteer Badges &amp; Impact</h2>
+            <div class="card" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; text-align:center;">
+              <div>
+                <div style="font-size:2rem;">🥇</div>
+                <strong>First Rescue</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Unlocked</div>
+              </div>
+              <div>
+                <div style="font-size:2rem;">⚡</div>
+                <strong>Speedy Courier</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">&lt; 30 min deliveries</div>
+              </div>
+              <div>
+                <div style="font-size:2rem;">🌿</div>
+                <strong>Zero Waste Hero</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">50+ Rescues</div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      completeDelivery(id) {
+        api.updateStatus(id, "delivered");
+        App.toast("Delivery complete! 50 meals saved and logged into community ledger.", "leaf-green");
+        App.route();
+      },
+
+      // 7. ADMIN DASHBOARD VIEW
+      renderAdminDashboard() {
+        return `
+          <div>
+            <h1 style="font-size:2.2rem; margin-bottom:0.5rem;">Admin Control Console</h1>
+            <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:1.5rem;">Platform overview, user verification queue, and urgent matching triggers.</p>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:2rem;">
+              <div class="card">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Total Users</div>
+                <div style="font-size:1.8rem; font-weight:700; color:var(--leaf-green);">${App.state.users.length}</div>
+              </div>
+              <div class="card">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Total Rescues</div>
+                <div style="font-size:1.8rem; font-weight:700; color:var(--mustard-dark);">1,420 Meals</div>
+              </div>
+              <div class="card">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Pending Verifications</div>
+                <div style="font-size:1.8rem; font-weight:700; color:var(--tomato-orange);">1 Org</div>
+              </div>
+            </div>
+
+            <!-- Users Directory Table -->
+            <div class="card" style="margin-bottom:2rem;">
+              <h3 style="font-size:1.25rem; margin-bottom:1rem;">Registered Stakeholders Directory</h3>
+              <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.88rem; text-align:left;">
+                  <thead>
+                    <tr style="border-bottom:2px solid var(--border-color);">
+                      <th style="padding:0.6rem;">Name</th>
+                      <th style="padding:0.6rem;">Role</th>
+                      <th style="padding:0.6rem;">Area</th>
+                      <th style="padding:0.6rem;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${App.state.users.map(u => `
+                      <tr style="border-bottom:1px solid var(--border-color);">
+                        <td style="padding:0.6rem;"><strong>${u.name}</strong><br><span style="font-size:0.75rem; color:var(--text-muted);">${u.email}</span></td>
+                        <td style="padding:0.6rem;"><span class="badge badge-available">${u.role}</span></td>
+                        <td style="padding:0.6rem;">${u.area || 'Bengaluru'}</td>
+                        <td style="padding:0.6rem;">
+                          <button class="btn btn-secondary btn-sm" onclick="App.toast('Verified credentials for ${u.name}')">Verify</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Urgent Matching Alerts -->
+            <div class="card" style="background:var(--bg-subtle);">
+              <h3 style="font-size:1.2rem; margin-bottom:0.5rem;">Urgent Expiry Matchmaker</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Broadcast instant alerts to local shelters for food expiring within 2 hours.</p>
+              <button class="btn btn-tomato btn-sm" onclick="App.toast('Dispatched emergency broadcast to 5 nearby community kitchens!')">
+                📢 Dispatch Emergency Broadcast to Nearby Receivers
+              </button>
+            </div>
+          </div>
+        `;
+      },
+
+      // 8. IMPACT CERTIFICATE VIEW
+      renderImpactCertificate() {
+        const user = App.state.currentUser || { name: "Champion", role: "donor" };
+        return `
+          <div style="max-width:700px; margin:0 auto; text-align:center;">
+            <div class="card" style="padding:3.5rem 2rem; border:4px double var(--leaf-green); background:linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-subtle) 100%);">
+              <span class="badge badge-available" style="margin-bottom:1rem;">Verified Climate Impact</span>
+              <h1 style="font-size:2.4rem; margin-bottom:0.5rem;">Certificate of Appreciation</h1>
+              <p style="font-size:1.1rem; color:var(--text-muted); margin-bottom:2rem;">Presented to</p>
+              
+              <h2 style="font-size:2.2rem; color:var(--leaf-green); margin-bottom:1.5rem; text-decoration:underline;">${user.name}</h2>
+              
+              <p style="font-size:1rem; max-width:500px; margin:0 auto 2rem; line-height:1.7;">
+                For dedicated participation in the FoodBridge zero-waste initiative, preventing food waste and directly feeding food-insecure families.
+              </p>
+
+              <div style="display:flex; justify-content:center; gap:2rem; margin-bottom:2.5rem;">
+                <div>
+                  <div style="font-size:2rem; font-weight:800; color:var(--leaf-green);">340</div>
+                  <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Meals Diverted</div>
+                </div>
+                <div>
+                  <div style="font-size:2rem; font-weight:800; color:var(--mustard-dark);">136 kg</div>
+                  <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">CO₂e Offset</div>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save Impact Card (PDF) ➔</button>
+            </div>
+          </div>
+        `;
+      }
+    };
+
+    // Initialize application on DOM load
+    document.addEventListener("DOMContentLoaded", () => App.init());
+  </script>
+</body>
 </html>
