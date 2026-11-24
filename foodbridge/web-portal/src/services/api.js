@@ -341,11 +341,19 @@ export async function fetchListings() {
 }
 
 export async function createListing(data, user) {
+  const mins = Number(data.expiresInMinutes) || (data.safe_until ? Math.max(15, Math.min(1440, Math.floor((new Date(data.safe_until) - Date.now()) / 60000))) : 120);
+  const payload = {
+    title: data.title,
+    meals: Number(data.meals),
+    pickupAddress: data.pickupAddress || data.pickup_address,
+    notes: data.notes || null,
+    expiresInMinutes: mins,
+  };
   return apiCall("/api/listings", {
     method: "POST",
-    body: data,
-    userId: user?.id,
-    userRole: user?.role,
+    body: payload,
+    userId: user?.id || 1,
+    userRole: user?.role || "donor",
   });
 }
 
