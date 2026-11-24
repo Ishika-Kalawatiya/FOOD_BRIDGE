@@ -18,11 +18,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        donate: resolve(__dirname, "donate.html"),
-        courier: resolve(__dirname, "courier.html"),
-        ngoHub: resolve(__dirname, "ngo-hub.html"),
-        portal: resolve(__dirname, "portal.html"),
-        app: resolve(__dirname, "app.html"),
       },
     },
   },
