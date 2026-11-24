@@ -8,6 +8,8 @@
  * alerting components via isDemoMode flag.
  */
 
+import { calculateWasteKg, calculateCo2eKg } from "../constants/impact";
+
 let demoModeListeners = new Set();
 let isDemoModeActive = false;
 
@@ -323,8 +325,8 @@ function handleLocalMockApi(path, method, body, userId) {
       meals_diverted: totalMeals,
       active_listings: activeCount,
       meals: totalMeals,
-      waste_kg: Math.round(totalMeals * 0.40 * 10) / 10,
-      co2e_kg: Math.round(totalMeals * 0.40 * 2.50 * 10) / 10,
+      waste_kg: calculateWasteKg(totalMeals),
+      co2e_kg: calculateCo2eKg(totalMeals),
       monthly: [
         { month: "Aug", meals: 180, waste_kg: 72 },
         { month: "Sep", meals: 340, waste_kg: 136 },

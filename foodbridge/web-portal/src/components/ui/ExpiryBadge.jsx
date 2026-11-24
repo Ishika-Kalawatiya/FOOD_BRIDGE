@@ -62,9 +62,9 @@ export function ExpiryBadge({ expiresAt, className = "" }) {
   return (
     <span
       title="Critical window: <1 hour remaining! Urgent pickup needed"
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold font-['Quicksand'] bg-[var(--color-tomato-alpha)] text-[var(--color-tomato-dark)] border border-[var(--color-tomato-orange)]/50 animate-pulse ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold font-['Quicksand'] bg-rose-100 text-rose-950 border border-rose-400 animate-pulse ${className}`}
     >
-      <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-tomato-orange)]" />
+      <AlertTriangle className="w-3.5 h-3.5 text-rose-700" />
       <span>{timeLeft.minutes}m {timeLeft.seconds}s remaining!</span>
     </span>
   );

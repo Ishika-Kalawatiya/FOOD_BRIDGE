@@ -138,8 +138,17 @@ export function Navbar({
             </button>
           )}
 
+          {/* Prominent Navbar CTA */}
+          <div className="hidden md:flex items-center">
+            <Link to="/donate">
+              <Button size="sm" variant="primary" className="font-bold">
+                Donate Food
+              </Button>
+            </Link>
+          </div>
+
           {/* Role Switcher Pill */}
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <button
               onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
               className="px-3 py-1.5 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] hover:bg-[#ebded0] border border-[var(--color-border)] text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] flex items-center gap-1.5 transition-colors"

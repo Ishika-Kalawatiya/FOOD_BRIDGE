@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { Utensils, Scale, Leaf, Globe, Building, Award, ShieldAlert } from "lucide-react";
 import { Card } from "./ui/Card";
+import { calculateWasteKg, calculateCo2eKg } from "../constants/impact";
 
 export function ImpactStats({ impactData, myOrgImpactData, activeRole }) {
   const [filterMode, setFilterMode] = useState("platform");
 
   const activeStats = filterMode === "org" && myOrgImpactData ? myOrgImpactData : impactData;
   const totalMeals = activeStats?.meals_diverted ?? activeStats?.meals ?? 120;
-  const wasteKg = activeStats?.waste_kg ?? Math.round(totalMeals * 0.40 * 10) / 10;
-  const co2eKg = activeStats?.co2e_kg ?? Math.round(wasteKg * 2.50 * 10) / 10;
+  const wasteKg = activeStats?.waste_kg ?? calculateWasteKg(totalMeals);
+  const co2eKg = activeStats?.co2e_kg ?? calculateCo2eKg(totalMeals);
 
   return (
     <Card className="mb-8 border-[var(--color-border)] bg-[var(--color-bg-surface)]">

@@ -4,6 +4,7 @@ import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Loader } from "../components/ui/Loader";
 import { fetchImpactSummary, fetchMonthlyImpact, fetchAuditSummary } from "../services/api";
+import { calculateWasteKg, calculateCo2eKg } from "../constants/impact";
 
 export function ImpactView() {
   const [loading, setLoading] = useState(true);
@@ -42,8 +43,8 @@ export function ImpactView() {
   }
 
   const totalMeals = summary?.meals_diverted ?? summary?.meals ?? 610;
-  const wasteKg = summary?.waste_kg ?? Math.round(totalMeals * 0.40 * 10) / 10;
-  const co2eKg = summary?.co2e_kg ?? Math.round(wasteKg * 2.50 * 10) / 10;
+  const wasteKg = summary?.waste_kg ?? calculateWasteKg(totalMeals);
+  const co2eKg = summary?.co2e_kg ?? calculateCo2eKg(totalMeals);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">

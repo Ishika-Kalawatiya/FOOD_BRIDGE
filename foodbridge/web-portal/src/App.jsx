@@ -53,7 +53,7 @@ function ScrollHandler() {
 }
 
 function MainAppContent() {
-  const { currentUser, activeRole, setActiveRole, authModalOpen, openAuthModal, closeAuthModal, logout } = useAuth();
+  const { currentUser, activeRole, setActiveRole, authModalOpen, authModalOptions, openAuthModal, closeAuthModal, logout } = useAuth();
   const { listings, loading, refresh, addListing, claim, collect, distribute, totalDivertedMeals, availableListings } = useListings();
 
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -110,6 +110,9 @@ function MainAppContent() {
               <LandingView
                 totalDivertedMeals={totalDivertedMeals}
                 activeListingsCount={availableListings.length}
+                listings={listings}
+                availableListings={availableListings}
+                onAction={handleAction}
               />
             }
           />
@@ -188,7 +191,7 @@ function MainAppContent() {
       <Footer />
 
       {/* Auth Modal */}
-      <AuthModal isOpen={authModalOpen} onClose={closeAuthModal} />
+      <AuthModal isOpen={authModalOpen} onClose={closeAuthModal} options={authModalOptions} />
     </div>
   );
 }

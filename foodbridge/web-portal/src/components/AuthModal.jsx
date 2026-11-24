@@ -7,10 +7,10 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "./ui/Toast";
 import { apiCall } from "../services/api";
 
-export function AuthModal({ isOpen, onClose }) {
+export function AuthModal({ isOpen, onClose, options = {} }) {
   const { login } = useAuth();
   const toast = useToast();
-  const [tab, setTab] = useState("quick"); // "quick" | "login" | "register"
+  const [tab, setTab] = useState("quick"); // "quick" | "custom"
 
   // Quick Demo Accounts
   const demoAccounts = [
@@ -40,12 +40,28 @@ export function AuthModal({ isOpen, onClose }) {
   const [org, setOrg] = useState("");
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      if (options.role) {
+        setRole(options.role);
+      }
+      if (options.tab) {
+        setTab(options.tab);
+      }
+    }
+  }, [isOpen, options]);
+
   async function handleQuickSelect(acc) {
     try {
       setLoading(true);
       await login(acc);
       toast.success(`Welcome back, ${acc.name}! Active as ${acc.role.toUpperCase()}.`);
       onClose();
+      if (options.onLoginSuccess) {
+        try {
+          await options.onLoginSuccess(acc);
+        } catch (_e) {}
+      }
     } catch (err) {
       toast.error(err.message || "Failed to switch account");
     } finally {
@@ -65,14 +81,20 @@ export function AuthModal({ isOpen, onClose }) {
         method: "POST",
         body: { name: name.trim(), role, org: org.trim() || undefined },
       });
-      await login({
+      const creds = {
         id: user.id || Date.now(),
         name: user.name || name.trim(),
         role: user.role || role,
         org: user.org || org.trim() || `${name}'s Org`,
-      });
+      };
+      await login(creds);
       toast.success(`Authenticated successfully as ${name}!`);
       onClose();
+      if (options.onLoginSuccess) {
+        try {
+          await options.onLoginSuccess(creds);
+        } catch (_e) {}
+      }
     } catch (err) {
       toast.error(err.message || "Login failed");
     } finally {

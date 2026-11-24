@@ -46,9 +46,9 @@ export function Footer() {
 
           {/* Core Roles */}
           <div className="space-y-3">
-            <h4 className="font-['Quicksand'] text-xs font-bold uppercase tracking-wider text-[var(--color-forest-text)]">
+            <h3 className="font-['Quicksand'] text-xs font-bold uppercase tracking-wider text-[var(--color-forest-text)]">
               Rescue Network
-            </h4>
+            </h3>
             <ul className="space-y-2 text-xs text-[var(--color-text-muted)] font-medium">
               <li>
                 <Link to="/donate" className="hover:text-[var(--color-leaf-green)] transition-colors flex items-center gap-1">
@@ -79,9 +79,9 @@ export function Footer() {
 
           {/* Platform & Impact */}
           <div className="space-y-3">
-            <h4 className="font-['Quicksand'] text-xs font-bold uppercase tracking-wider text-[var(--color-forest-text)]">
+            <h3 className="font-['Quicksand'] text-xs font-bold uppercase tracking-wider text-[var(--color-forest-text)]">
               Platform & Mission
-            </h4>
+            </h3>
             <ul className="space-y-2 text-xs text-[var(--color-text-muted)] font-medium">
               <li>
                 <a
@@ -141,9 +141,9 @@ export function Footer() {
 
           {/* Contact & Support */}
           <div className="space-y-3">
-            <h4 className="font-['Quicksand'] text-xs font-bold uppercase tracking-wider text-[var(--color-forest-text)]">
+            <h3 className="font-['Quicksand'] text-xs font-bold uppercase tracking-wider text-[var(--color-forest-text)]">
               Community & Contact
-            </h4>
+            </h3>
             <p className="text-xs text-[var(--color-text-muted)]">
               Have questions about university food recovery, volunteering, or API integrations?
             </p>

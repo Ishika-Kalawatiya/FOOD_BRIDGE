@@ -18,6 +18,17 @@ export function AuthProvider({ children }) {
   });
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalOptions, setAuthModalOptions] = useState({});
+
+  function openAuthModal(options = {}) {
+    setAuthModalOptions(options);
+    setAuthModalOpen(true);
+  }
+
+  function closeAuthModal() {
+    setAuthModalOpen(false);
+    setAuthModalOptions({});
+  }
 
   useEffect(() => {
     if (currentUser) {
@@ -63,8 +74,9 @@ export function AuthProvider({ children }) {
         activeRole,
         setActiveRole: switchRole,
         authModalOpen,
-        openAuthModal: () => setAuthModalOpen(true),
-        closeAuthModal: () => setAuthModalOpen(false),
+        authModalOptions,
+        openAuthModal,
+        closeAuthModal,
         login,
         logout,
       }}

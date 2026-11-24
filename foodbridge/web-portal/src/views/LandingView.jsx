@@ -17,34 +17,33 @@ import {
   Users,
   Compass,
   MapPin,
-  Calendar,
-  Send,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
+import { ExpiryBadge } from "../components/ui/ExpiryBadge";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ui/Toast";
 
-export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 }) {
-  const { setActiveRole, openAuthModal } = useAuth();
+import { LandingHeroStats } from "./landing/LandingHeroStats";
+import { LandingImpactCalculator } from "./landing/LandingImpactCalculator";
+import { LandingFaqAccordion } from "./landing/LandingFaqAccordion";
+
+export function LandingView({
+  totalDivertedMeals = 0,
+  activeListingsCount = 0,
+  listings = [],
+  availableListings = [],
+  onAction = () => {},
+}) {
+  const { currentUser, activeRole, setActiveRole, openAuthModal } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
-  // Interactive Live Simulator state
+  // Workflow Simulation interactive state
   const [simStep, setSimStep] = useState(1);
-  const [simRole, setSimRole] = useState("donor");
-
-  // Impact Calculator Slider state
-  const [dailyMealsSlider, setDailyMealsSlider] = useState(250);
-
-  // Rescue Drive Signup Form state
-  const [regName, setRegName] = useState("");
-  const [regOrg, setRegOrg] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regRole, setRegRole] = useState("volunteer");
-  const [regSubmitted, setRegSubmitted] = useState(false);
-
   const simStepsData = {
     1: {
       role: "donor",
@@ -53,10 +52,9 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
       title: "50 Servings Fresh Veg Curry & Rice",
       meta: "📍 Campus Central Canteen • ⌛ Safe for ~2h 15m",
       progress: 33,
-      desc: "Campus canteen finishes lunch service with 50 safe, untouched meals. Donor creates a surplus listing with thermal storage verification.",
+      desc: "Kitchen completes dining service with 50 safe, untouched meals. Donor creates a surplus listing with a verified safe-until window.",
       actionText: "Advance to Courier Pickup ➔",
       portalRole: "donor",
-      portalLabel: "Execute Donor Posting",
       portalPath: "/donate",
     },
     2: {
@@ -66,10 +64,9 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
       title: "50 Servings Fresh Veg Curry & Rice",
       meta: "🚴 Courier Alex assigned • Pickup from Gate 3",
       progress: 66,
-      desc: "Nearby student courier receives live dispatch alert on bicycle. Courier arrives at canteen loading dock and scans receipt confirmation.",
+      desc: "Nearby volunteer courier accepts the delivery on bicycle, arrives at the kitchen loading area, and collects the meal batch.",
       actionText: "Advance to Shelter Delivery ➔",
       portalRole: "volunteer",
-      portalLabel: "Accept Pickup Claim",
       portalPath: "/courier",
     },
     3: {
@@ -79,10 +76,9 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
       title: "50 Servings Fresh Veg Curry & Rice",
       meta: "🏢 Hope Community Shelter • Verified distributed",
       progress: 100,
-      desc: "Meals delivered warm to shelter dining kitchen. Distribution logged to public audit trail; 20kg food waste & 50kg CO2e avoided.",
+      desc: "Meals arrive warm at the shelter kitchen and are served to families. Receipt is logged to public community impact metrics.",
       actionText: "Restart Rescue Simulation ↺",
       portalRole: "ngo",
-      portalLabel: "Confirm Shelter Receipt",
       portalPath: "/ngo",
     },
   };
@@ -94,134 +90,135 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
     else setSimStep((prev) => prev + 1);
   }
 
-  function handleSwitchSimRole(roleKey) {
-    setSimRole(roleKey);
-    if (roleKey === "donor") setSimStep(1);
-    if (roleKey === "volunteer") setSimStep(2);
-    if (roleKey === "ngo") setSimStep(3);
-  }
-
-  function handleDriveSignup(e) {
-    e.preventDefault();
-    if (!regName.trim() || !regEmail.trim()) {
-      toast.error("Please provide your name and email address.");
+  // Handle claiming from the live surplus teaser
+  const handleTeaserClaim = async (listingId) => {
+    if (!currentUser) {
+      toast.info("Please sign in as a Volunteer to claim this rescue.");
+      openAuthModal({
+        role: "volunteer",
+        tab: "quick",
+        onLoginSuccess: async () => {
+          try {
+            await onAction(listingId, "claim");
+          } catch (_e) {}
+        },
+      });
       return;
     }
-    setRegSubmitted(true);
-    toast.success(`🎉 Thank you for registering, ${regName}! Check your email for drive details.`);
-  }
 
-  // Calculated Calculator Metrics
-  const monthlyMeals = dailyMealsSlider * 30;
-  const monthlyWasteKg = Math.round(monthlyMeals * 0.40);
-  const monthlyCo2Kg = Math.round(monthlyWasteKg * 2.50);
-  const monthlyPoints = monthlyMeals * 15;
+    if (currentUser.role !== "volunteer" && activeRole !== "volunteer") {
+      toast.error("Only volunteer couriers can claim pickups. Please switch to a volunteer account.");
+      openAuthModal({
+        role: "volunteer",
+        tab: "quick",
+        onLoginSuccess: async () => {
+          try {
+            await onAction(listingId, "claim");
+          } catch (_e) {}
+        },
+      });
+      return;
+    }
+
+    try {
+      await onAction(listingId, "claim");
+    } catch (err) {
+      toast.error(err.message || "Could not claim listing.");
+    }
+  };
+
+  // Up to 3 active available listings
+  const teaserListings = availableListings.slice(0, 3);
 
   return (
-    <div className="space-y-16 lg:space-y-24 pb-16 font-['Inter']">
+    <div className="space-y-16 sm:space-y-24 pb-16 font-['Inter']">
       {/* =========================================================================
-          SECTION 1: HERO SECTION (#home)
+          SECTION 1: HERO
           ========================================================================= */}
-      <section id="home" className="pt-8 sm:pt-14 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="home" className="pt-8 sm:pt-14 pb-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          {/* Left Text Column */}
+          {/* Left Text & Actions Column */}
           <div className="lg:col-span-7 space-y-6">
-            <h1 className="font-['Fraunces'] text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[var(--color-forest-text)] leading-[1.15]">
-              Every meal saved is a{" "}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <Award className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Supporting UN SDG 2 (Zero Hunger) &amp; SDG 12 (Responsible Consumption)</span>
+            </div>
+
+            <h1 className="font-['Fraunces'] text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[var(--color-forest-text)] leading-[1.12]">
+              Turn Surplus Food into{" "}
               <span className="text-[var(--color-leaf-green)] underline decoration-[var(--color-mustard)] decoration-wavy decoration-2">
-                bridge built.
+                Community Meals.
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-[var(--color-text-muted)] font-['Inter'] leading-relaxed max-w-2xl">
-              FoodBridge connects surplus food from canteens, restaurants, and events directly to communities facing food insecurity.
+            <p className="text-base sm:text-lg text-[var(--color-text-muted)] leading-relaxed max-w-2xl font-['Inter']">
+              FoodBridge connects canteens, restaurants, hostels, and caterers with local volunteer couriers to deliver fresh, untouched surplus food to community shelters before it spoils.
             </p>
 
-            {/* Hero CTAs */}
+            {/* Hero Primary & Secondary CTAs */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link to="/portal">
-                <Button variant="primary" size="lg">
-                  <span>🚀 Launch Rescue Portal ➔</span>
-                </Button>
-              </Link>
+              <Button to="/donate" variant="primary" size="lg" className="shadow-[var(--shadow-warm-sm)]">
+                <span>Donate Surplus Food ➔</span>
+              </Button>
 
-              <Button
-                variant="mango"
-                size="lg"
-                onClick={openAuthModal}
-              >
-                <span>👤 View My Profile</span>
+              <Button to="/courier" variant="secondary" size="lg">
+                <Truck className="w-4 h-4 mr-1.5" />
+                <span>Join as Volunteer</span>
               </Button>
             </div>
 
-            {/* Live Counter Strip */}
-            <div className="pt-6 border-t border-[var(--color-border)] grid grid-cols-3 gap-4 max-w-lg">
-              <div>
-                <div className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-[var(--color-leaf-green)]">
-                  {totalDivertedMeals.toLocaleString()}
-                </div>
-                <div className="text-xs text-[var(--color-text-muted)] font-medium">Meals Rescued</div>
-              </div>
-              <div className="border-l border-[var(--color-border)] pl-4">
-                <div className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-[var(--color-tomato-orange)]">
-                  {Math.round(totalDivertedMeals * 0.40)}
-                </div>
-                <div className="text-xs text-[var(--color-text-muted)] font-medium">Food Waste Avoided (kg)</div>
-              </div>
-              <div className="border-l border-[var(--color-border)] pl-4">
-                <div className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-amber-700">
-                  480+
-                </div>
-                <div className="text-xs text-[var(--color-text-muted)] font-medium">Active Volunteers</div>
-              </div>
-            </div>
+            {/* Live Stats Strip */}
+            <LandingHeroStats
+              fallbackMeals={totalDivertedMeals}
+              fallbackActive={activeListingsCount}
+            />
           </div>
 
-          {/* Right: Live Interactive Workflow Simulation Card */}
+          {/* Right: Live Interactive Workflow Card */}
           <div className="lg:col-span-5">
             <Card className="bg-[var(--color-bg-surface)] border-2 border-[var(--color-border)] shadow-[var(--shadow-warm-lg)] p-6">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-[var(--color-border)]">
                 <div className="flex items-center gap-1.5 text-xs font-bold font-['Quicksand'] text-[var(--color-leaf-green)]">
                   <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-leaf-green)] animate-ping" />
-                  <span>LIVE WORKFLOW SIMULATION</span>
+                  <span>HOW FOOD RESCUE WORKS</span>
                 </div>
-                <Badge variant="neutral">Step {simStep} of 3</Badge>
+                <Badge variant="neutral">Stage {simStep} of 3</Badge>
               </div>
 
-              {/* Role Tabs */}
+              {/* Step Tabs */}
               <div className="grid grid-cols-3 gap-1.5 p-1 bg-[var(--color-bg-subtle)] rounded-[var(--radius-md)] mb-4 text-xs font-bold font-['Quicksand']">
                 <button
                   type="button"
-                  onClick={() => handleSwitchSimRole("donor")}
+                  onClick={() => setSimStep(1)}
                   className={`py-1.5 rounded-[var(--radius-sm)] transition-all ${
-                    currentSim.role === "donor"
+                    simStep === 1
                       ? "bg-[var(--color-bg-surface)] text-[var(--color-leaf-green)] shadow-xs"
-                      : "text-[var(--color-text-muted)]"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-forest-text)]"
                   }`}
                 >
-                  👨‍🍳 Donor
+                  1. Post
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSwitchSimRole("volunteer")}
+                  onClick={() => setSimStep(2)}
                   className={`py-1.5 rounded-[var(--radius-sm)] transition-all ${
-                    currentSim.role === "volunteer"
+                    simStep === 2
                       ? "bg-[var(--color-bg-surface)] text-[var(--color-leaf-green)] shadow-xs"
-                      : "text-[var(--color-text-muted)]"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-forest-text)]"
                   }`}
                 >
-                  🚴 Courier
+                  2. Claim
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSwitchSimRole("ngo")}
+                  onClick={() => setSimStep(3)}
                   className={`py-1.5 rounded-[var(--radius-sm)] transition-all ${
-                    currentSim.role === "ngo"
+                    simStep === 3
                       ? "bg-[var(--color-bg-surface)] text-[var(--color-leaf-green)] shadow-xs"
-                      : "text-[var(--color-text-muted)]"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-forest-text)]"
                   }`}
                 >
-                  🏢 NGO
+                  3. Deliver
                 </button>
               </div>
 
@@ -232,9 +229,9 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
                   <span className="text-[11px] text-[var(--color-text-muted)] font-mono">Stage {simStep}/3</span>
                 </div>
 
-                <h4 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+                <p className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
                   {currentSim.title}
-                </h4>
+                </p>
 
                 <p className="text-xs text-[var(--color-text-muted)]">{currentSim.meta}</p>
 
@@ -251,7 +248,7 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
                 </p>
               </div>
 
-              {/* Simulation Action Buttons */}
+              {/* Simulation Controls */}
               <div className="pt-4 flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="secondary"
@@ -262,15 +259,13 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
                   {currentSim.actionText}
                 </Button>
                 <Button
+                  to={currentSim.portalPath}
                   variant="primary"
                   size="sm"
-                  onClick={() => {
-                    setActiveRole(currentSim.portalRole);
-                    navigate(currentSim.portalPath);
-                  }}
                   className="flex-1 font-bold"
+                  onClick={() => setActiveRole(currentSim.portalRole)}
                 >
-                  {currentSim.portalLabel} ➔
+                  Open View ➔
                 </Button>
               </div>
             </Card>
@@ -279,507 +274,512 @@ export function LandingView({ totalDivertedMeals = 120, activeListingsCount = 3 
       </section>
 
       {/* =========================================================================
-          SECTION 2: THE PROBLEM (#problem)
+          SECTION 2: CHOOSE YOUR PATH (ROLE CARDS)
           ========================================================================= */}
-      <section id="problem" className="py-12 bg-[var(--color-bg-surface)] border-y border-[var(--color-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="text-center max-w-2xl mx-auto">
-            <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
-              The Challenge
-            </span>
-            <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)] mt-2">
-              What&apos;s Going On?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-[var(--color-bg-subtle)]/50 border-[var(--color-border)] p-6 space-y-3">
-              <h3 className="font-['Fraunces'] text-xl font-bold text-[var(--color-tomato-dark)]">
-                The Surplus Paradox
-              </h3>
-              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
-                Food wastage is a significant social and environmental issue. Large quantities of edible surplus food from college canteens, restaurants, hotels, households, and events are often discarded because there is no timely mechanism to connect that food with people or organizations that can use it. At the same time, many communities face food insecurity and limited access to adequate meals.
-              </p>
-            </Card>
-
-            <Card className="bg-[var(--color-bg-subtle)]/50 border-[var(--color-border)] p-6 space-y-3">
-              <h3 className="font-['Fraunces'] text-xl font-bold text-[var(--color-leaf-green)]">
-                The Awareness Gap
-              </h3>
-              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
-                While food donation and redistribution initiatives exist, young people often have limited awareness or active participation in food-rescue activities. Traditional awareness campaigns may communicate the problem but do not necessarily make people understand the practical challenges involved in rescuing food, such as limited time, food expiry, transportation constraints, and choosing efficient delivery routes.
-              </p>
-            </Card>
-          </div>
-
-          {/* 4 Challenge Keyword Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-            <Card hoverable className="p-4 text-center space-y-2 border-[var(--color-border)]">
-              <div className="text-3xl">⏱️</div>
-              <h4 className="font-['Quicksand'] text-sm font-bold text-[var(--color-forest-text)]">Limited Time</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">Surplus meals must be collected immediately post-event before window closes.</p>
-            </Card>
-
-            <Card hoverable className="p-4 text-center space-y-2 border-[var(--color-border)]">
-              <div className="text-3xl">⏳</div>
-              <h4 className="font-['Quicksand'] text-sm font-bold text-[var(--color-forest-text)]">Food Expiry</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">Perishable items lose safety rapidly without temperature-controlled transport.</p>
-            </Card>
-
-            <Card hoverable className="p-4 text-center space-y-2 border-[var(--color-border)]">
-              <div className="text-3xl">🚛</div>
-              <h4 className="font-['Quicksand'] text-sm font-bold text-[var(--color-forest-text)]">Transportation</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">Mobilizing volunteers and vehicles on short notice presents logistical hurdles.</p>
-            </Card>
-
-            <Card hoverable className="p-4 text-center space-y-2 border-[var(--color-border)]">
-              <div className="text-3xl">🗺️</div>
-              <h4 className="font-['Quicksand'] text-sm font-bold text-[var(--color-forest-text)]">Efficient Routes</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">Mapping optimal delivery paths to community centers saves crucial minutes.</p>
-            </Card>
-          </div>
-
-          {/* Surplus Sources Identified Chips */}
-          <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)] flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs font-bold font-['Quicksand'] uppercase tracking-wider text-[var(--color-forest-text)]">
-              Key Surplus Sources Identified:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[var(--color-border)] shadow-xs">
-                🏫 College Canteens
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[var(--color-border)] shadow-xs">
-                🍽️ Restaurants
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[var(--color-border)] shadow-xs">
-                🏨 Hotels
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[var(--color-border)] shadow-xs">
-                🏡 Households
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-[var(--color-border)] shadow-xs">
-                🎉 Events &amp; Festivities
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 3: WHAT FOODBRIDGE DOES & PROJECT AIMS (#solution)
-          ========================================================================= */}
-      <section id="solution" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        <div className="p-8 rounded-[var(--radius-xl)] bg-[var(--color-leaf-green-alpha)] border border-[var(--color-leaf-green)]/30 space-y-2 text-center max-w-4xl mx-auto">
-          <h3 className="font-['Fraunces'] text-2xl font-bold text-[var(--color-leaf-green)]">
-            What FoodBridge Does
-          </h3>
-          <p className="text-sm text-[var(--color-forest-text)] leading-relaxed max-w-3xl mx-auto">
-            FoodBridge connects surplus food sources with local student volunteers and community redistribution centers. Volunteers receive real-time notifications for nearby food surplus pickups, coordinate transportation, and deliver meals before food expiry timers run out.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto">
-            <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wider">
-              Core Objectives
-            </span>
-            <h2 className="font-['Fraunces'] text-3xl font-extrabold text-[var(--color-forest-text)] mt-2">
-              Project Aims
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1">
-              Empowering students through awareness and tangible community action.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              { num: "01", text: "Increase awareness of food wastage among students." },
-              { num: "02", text: "Teach the importance of timely food rescue and redistribution." },
-              { num: "03", text: "Make sustainability education practical and accessible." },
-              { num: "04", text: "Encourage direct participation in community food drives." },
-              { num: "05", text: "Demonstrate measurable outcomes through platform analytics." },
-            ].map((aim) => (
-              <Card key={aim.num} hoverable className="p-5 border-[var(--color-border)] space-y-2">
-                <span className="font-['Fraunces'] text-2xl font-bold text-[var(--color-leaf-green)]">{aim.num}</span>
-                <p className="text-xs text-[var(--color-text-muted)] font-medium leading-snug">{aim.text}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 4: HOW IT WORKS (#how-it-works)
-          ========================================================================= */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-8">
-        <div className="text-center max-w-2xl mx-auto">
+      <section id="roles" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
-            Rescue Workflow
+            Choose Your Path
           </span>
-          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)] mt-2">
-            How It Works
+          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)]">
+            How Do You Want to Participate?
           </h2>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            From surplus notification to real-world community impact in four simple steps.
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Whether you manage a food facility, want to volunteer locally, or represent a shelter, FoodBridge makes coordination seamless.
           </p>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Role 1: Food Donor */}
+          <Card hoverable className="p-6 flex flex-col justify-between border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-5">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] flex items-center justify-center">
+                <Utensils className="w-6 h-6" />
+              </div>
+              <h3 className="font-['Fraunces'] text-xl font-bold text-[var(--color-forest-text)]">
+                I Have Surplus Food
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
+                For university canteens, hostels, restaurants, and caterers. Post portion estimates and pickup location in under 60 seconds with safe-until timestamps.
+              </p>
+            </div>
+            <Button to="/donate" variant="primary" size="md" className="w-full">
+              <span>List Surplus Food ➔</span>
+            </Button>
+          </Card>
+
+          {/* Role 2: Volunteer Courier */}
+          <Card hoverable className="p-6 flex flex-col justify-between border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-5">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--color-tomato-alpha)] text-[var(--color-tomato-orange)] flex items-center justify-center">
+                <Truck className="w-6 h-6" />
+              </div>
+              <h3 className="font-['Fraunces'] text-xl font-bold text-[var(--color-forest-text)]">
+                I Can Deliver Locally
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
+                Have 30 minutes to spare? Pick up fresh meal boxes on foot or bicycle and deliver directly to nearby shelters (typically 1 to 3 km away).
+              </p>
+            </div>
+            <Button to="/courier" variant="mango" size="md" className="w-full">
+              <span>View Delivery Board ➔</span>
+            </Button>
+          </Card>
+
+          {/* Role 3: Shelter Hub */}
+          <Card hoverable className="p-6 flex flex-col justify-between border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-5">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-[var(--radius-md)] bg-purple-100 text-purple-800 flex items-center justify-center">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-['Fraunces'] text-xl font-bold text-[var(--color-forest-text)]">
+                We Need Food for Shelters
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
+                For registered NGOs, community kitchens, and homeless shelters. Receive fresh, unserved meals delivered to your door at zero cost.
+              </p>
+            </div>
+            <Button to="/ngo" variant="secondary" size="md" className="w-full">
+              <span>Access Shelter Hub ➔</span>
+            </Button>
+          </Card>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 3: HOW IT WORKS & TIMER LEGEND
+          ========================================================================= */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
+            Operational Workflow
+          </span>
+          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)]">
+            Four Steps to Zero Food Waste
+          </h2>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            A fast, accountable rescue pipeline that prioritizes food freshness and food safety.
+          </p>
+        </div>
+
+        {/* 4 Steps Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card hoverable className="p-5 flex flex-col justify-between border-[var(--color-border)]">
-            <div>
-              <div className="w-9 h-9 rounded-full bg-[var(--color-leaf-green)] text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm mb-3">
-                1
-              </div>
-              <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)] mb-1">
-                1. Post
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                Canteens, restaurants, and households post surplus food listings with expiry windows.
-              </p>
+          <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-9 h-9 rounded-full bg-[var(--color-leaf-green)] text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm">
+              1
             </div>
-            <Link to="/donate" className="pt-4">
-              <Button size="sm" variant="primary" className="w-full">
-                <span>👨‍🍳 Post Food ➔</span>
-              </Button>
-            </Link>
-          </Card>
-
-          <Card hoverable className="p-5 flex flex-col justify-between border-[var(--color-border)]">
-            <div>
-              <div className="w-9 h-9 rounded-full bg-[var(--color-mustard-dark)] text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm mb-3">
-                2
-              </div>
-              <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)] mb-1">
-                2. Claim
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                Student volunteer couriers claim urgent rescue pickups on the platform map.
-              </p>
-            </div>
-            <Link to="/courier" className="pt-4">
-              <Button size="sm" variant="mango" className="w-full">
-                <span>🚴 Accept Pickup ➔</span>
-              </Button>
-            </Link>
-          </Card>
-
-          <Card hoverable className="p-5 flex flex-col justify-between border-[var(--color-border)]">
-            <div>
-              <div className="w-9 h-9 rounded-full bg-purple-700 text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm mb-3">
-                3
-              </div>
-              <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)] mb-1">
-                3. Deliver
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                Pick efficient delivery routes to transport fresh food directly to community centers.
-              </p>
-            </div>
-            <Link to="/ngo" className="pt-4">
-              <Button size="sm" variant="secondary" className="w-full">
-                <span>🏢 NGO Shelter Hub ➔</span>
-              </Button>
-            </Link>
-          </Card>
-
-          <Card hoverable className="p-5 flex flex-col justify-between border-[var(--color-border)]">
-            <div>
-              <div className="w-9 h-9 rounded-full bg-emerald-800 text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm mb-3">
-                4
-              </div>
-              <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)] mb-1">
-                4. Impact
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                Rescues convert into verified impact metrics, diverted meals, and carbon waste avoided.
-              </p>
-            </div>
-            <Link to="/impact" className="pt-4">
-              <Button size="sm" variant="secondary" className="w-full">
-                <span>📊 View Impact ➔</span>
-              </Button>
-            </Link>
-          </Card>
-        </div>
-
-        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-forest-text)] text-center max-w-2xl mx-auto">
-          💡 Note: Timely decisions and efficient resource distribution minimize food waste and support local families!
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 5: OUR IMPACT DASHBOARD & CALCULATOR (#impact)
-          ========================================================================= */}
-      <section id="impact" className="py-12 bg-[var(--color-bg-surface)] border-y border-[var(--color-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="text-center max-w-2xl mx-auto">
-            <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
-              Measurable Outcomes
-            </span>
-            <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)] mt-2">
-              Our Impact Dashboard
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] mt-1">
-              Tracking actual environmental and social savings through platform analytics.
+            <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)]">
+              1. Post Surplus
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Donors specify portion count, pickup location, and safe-until window right after meal preparation or dining service.
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card className="p-5 text-center bg-[var(--color-bg-subtle)]/60 border-[var(--color-border)]">
-              <div className="font-['Fraunces'] text-3xl font-extrabold text-[var(--color-leaf-green)]">12,450</div>
-              <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase mt-1">Meals Rescued</div>
-            </Card>
-
-            <Card className="p-5 text-center bg-[var(--color-bg-subtle)]/60 border-[var(--color-border)]">
-              <div className="font-['Fraunces'] text-3xl font-extrabold text-[var(--color-tomato-orange)]">4,980</div>
-              <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase mt-1">Food Waste Avoided (kg)</div>
-            </Card>
-
-            <Card className="p-5 text-center bg-[var(--color-bg-subtle)]/60 border-[var(--color-border)]">
-              <div className="font-['Fraunces'] text-3xl font-extrabold text-[var(--color-mustard-dark)]">185,000</div>
-              <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase mt-1">Impact Points Earned</div>
-            </Card>
-
-            <Card className="p-5 text-center bg-[var(--color-bg-subtle)]/60 border-[var(--color-border)]">
-              <div className="font-['Fraunces'] text-3xl font-extrabold text-amber-800">480+</div>
-              <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase mt-1">Active Student Rescuers</div>
-            </Card>
-          </div>
-
-          {/* Interactive Impact Calculator */}
-          <Card className="p-8 bg-[var(--color-bg-surface)] border-2 border-[var(--color-border)] shadow-[var(--shadow-warm-md)] space-y-6">
-            <div className="text-center max-w-xl mx-auto space-y-1">
-              <h3 className="font-['Fraunces'] text-2xl font-bold text-[var(--color-forest-text)]">
-                Interactive Food Waste Calculator
-              </h3>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Estimate the monthly community savings when your campus joins FoodBridge.
-              </p>
-            </div>
-
-            <div className="max-w-xl mx-auto space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold font-['Quicksand']">
-                <span>Daily Surplus Rescued:</span>
-                <span className="text-base font-extrabold text-[var(--color-leaf-green)]">
-                  {dailyMealsSlider} meals/day
-                </span>
-              </div>
-              <input
-                type="range"
-                min="20"
-                max="1000"
-                step="10"
-                value={dailyMealsSlider}
-                onChange={(e) => setDailyMealsSlider(Number(e.target.value))}
-                className="w-full accent-[var(--color-leaf-green)] cursor-pointer"
-              />
-              <div className="flex justify-between text-[11px] text-[var(--color-text-muted)] font-semibold">
-                <span>20 meals/day</span>
-                <span>500 meals/day</span>
-                <span>1,000 meals/day</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
-              <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] text-center">
-                <div className="text-2xl mb-1">🍲</div>
-                <div className="font-['Fraunces'] text-2xl font-bold text-[var(--color-forest-text)]">
-                  {monthlyMeals.toLocaleString()}
-                </div>
-                <div className="text-[11px] font-bold text-[var(--color-text-muted)] font-['Quicksand'] mt-1">
-                  Monthly Meals Diverted
-                </div>
-              </div>
-
-              <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] text-center">
-                <div className="text-2xl mb-1">⚖️</div>
-                <div className="font-['Fraunces'] text-2xl font-bold text-[var(--color-tomato-orange)]">
-                  {monthlyWasteKg.toLocaleString()} kg
-                </div>
-                <div className="text-[11px] font-bold text-[var(--color-text-muted)] font-['Quicksand'] mt-1">
-                  Food Waste Avoided
-                </div>
-              </div>
-
-              <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] text-center">
-                <div className="text-2xl mb-1">🌿</div>
-                <div className="font-['Fraunces'] text-2xl font-bold text-emerald-800">
-                  {monthlyCo2Kg.toLocaleString()} kg
-                </div>
-                <div className="text-[11px] font-bold text-[var(--color-text-muted)] font-['Quicksand'] mt-1">
-                  CO₂e Offset
-                </div>
-              </div>
-
-              <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-subtle)] text-center">
-                <div className="text-2xl mb-1">🏆</div>
-                <div className="font-['Fraunces'] text-2xl font-bold text-[var(--color-mustard-dark)]">
-                  {monthlyPoints.toLocaleString()}
-                </div>
-                <div className="text-[11px] font-bold text-[var(--color-text-muted)] font-['Quicksand'] mt-1">
-                  Community Points
-                </div>
-              </div>
-            </div>
           </Card>
+
+          <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-9 h-9 rounded-full bg-[var(--color-mustard-dark)] text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm">
+              2
+            </div>
+            <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)]">
+              2. Courier Claims
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Nearby volunteer couriers browse available listings and claim the delivery route on the live board.
+            </p>
+          </Card>
+
+          <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-9 h-9 rounded-full bg-purple-700 text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm">
+              3
+            </div>
+            <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)]">
+              3. Transport Food
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Meals are collected and transported directly to verified community shelters (typically within 1 to 3 km).
+            </p>
+          </Card>
+
+          <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-9 h-9 rounded-full bg-emerald-800 text-white font-['Fraunces'] font-bold flex items-center justify-center text-sm">
+              4
+            </div>
+            <h3 className="font-['Fraunces'] text-lg font-bold text-[var(--color-forest-text)]">
+              4. Confirm &amp; Audit
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              The receiving shelter confirms meal arrival; saved food and greenhouse gas offsets are logged to the public impact ledger.
+            </p>
+          </Card>
+        </div>
+
+        {/* Safety Countdown Legend */}
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-[var(--shadow-warm-xs)] space-y-2">
+          <div className="flex items-center gap-2 text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] uppercase tracking-wider">
+            <Clock className="w-4 h-4 text-[var(--color-leaf-green)]" />
+            <span>Shelf-Life &amp; Safety Timer Legend:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-[var(--color-forest-text)]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span><strong>Green</strong>: &gt;2 Hours Remaining (Safe Window)</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <span><strong>Yellow</strong>: 1 to 2 Hours (Urgent Window)</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+              <span><strong>Red</strong>: &lt;1 Hour (Critical Window)</span>
+            </span>
+          </div>
+          <p className="text-[11px] text-[var(--color-text-muted)] font-['Inter'] pt-1 border-t border-[var(--color-border)]/50">
+            ✓ Verified Auto-Expiry: Listings that pass their donor-specified safe-until window without being claimed are automatically hidden from the active board.
+          </p>
         </div>
       </section>
 
       {/* =========================================================================
-          SECTION 6: JOIN A RESCUE DRIVE (#get-involved)
+          SECTION 4: LIVE SURPLUS TEASER
           ========================================================================= */}
-      <section id="get-involved" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        <div className="text-center max-w-2xl mx-auto">
+      <section id="live-surplus" className="py-12 bg-[var(--color-bg-surface)] border-y border-[var(--color-border)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-amber-100 text-amber-900 border border-amber-300 uppercase tracking-wider inline-flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>Live Surplus Board</span>
+              </span>
+              <h2 className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-[var(--color-forest-text)] mt-2">
+                Active Listings Ready for Rescue
+              </h2>
+              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1">
+                Batches currently posted by kitchens awaiting volunteer courier pickup.
+              </p>
+            </div>
+
+            <Button to="/courier" variant="secondary" size="sm">
+              <span>View Full Courier Board ➔</span>
+            </Button>
+          </div>
+
+          {teaserListings.length === 0 ? (
+            <EmptyState
+              title="No active surplus batches right now"
+              message="Dining facilities and caterers typically post batches after meal preparation or dining service. Check back soon or visit the volunteer courier board!"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {teaserListings.map((listing) => {
+                const expiresAt = listing.expires_at || listing.safe_until;
+                return (
+                  <Card
+                    key={listing.id}
+                    hoverable
+                    className="p-5 flex flex-col justify-between border-[var(--color-border)] bg-[var(--color-bg-subtle)] space-y-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)] leading-snug">
+                          {listing.title}
+                        </h3>
+                        <Badge variant="leaf">Available</Badge>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-sm)] bg-[var(--color-bg-surface)] text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] border border-[var(--color-border)]">
+                          <Utensils className="w-3 h-3 text-[var(--color-leaf-green)]" />
+                          <span>{listing.meals} Portions</span>
+                        </span>
+
+                        {expiresAt && <ExpiryBadge expiresAt={expiresAt} />}
+                      </div>
+
+                      <div className="text-xs text-[var(--color-text-muted)] space-y-1 font-['Inter']">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-[var(--color-leaf-green)] shrink-0" />
+                          <span className="truncate">{listing.pickup_address || "Pickup address provided"}</span>
+                        </div>
+                        {listing.donor_name && (
+                          <div className="text-[11px] text-[var(--color-text-muted)] pl-5">
+                            From: {listing.donor_name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleTeaserClaim(listing.id)}
+                    >
+                      <span>Claim as Volunteer ➔</span>
+                    </Button>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 5: WHY IT MATTERS & CALCULATOR
+          ========================================================================= */}
+      <section id="problem" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
-            Real-World Action
+            Why It Matters
           </span>
-          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)] mt-2">
-            Join a Rescue Drive
+          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)]">
+            Transforming Waste into Sustenance
           </h2>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
-            Students can participate in or document an actual surplus-food collection and redistribution activity, connecting our network to genuine community impact.
+          <p className="text-sm text-[var(--color-text-muted)]">
+            A small shift in logistics prevents edible food from generating landfill methane while feeding local families.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* 3-Step Flow Column */}
-          <div className="lg:col-span-6 space-y-4">
-            <Card className="p-6 border-[var(--color-border)] flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--color-leaf-green)] text-white font-['Fraunces'] font-bold flex items-center justify-center shrink-0">
-                1
+          {/* Left: 3 Factual Pillars */}
+          <div className="lg:col-span-5 space-y-4">
+            <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-[var(--radius-md)] bg-[var(--color-tomato-alpha)] text-[var(--color-tomato-orange)]">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+                  Preventing Food Spoilage
+                </h3>
               </div>
-              <div className="space-y-1">
-                <h4 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">Sign Up</h4>
-                <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                  Register your student profile or college volunteer team to get matched with nearby food surplus points.
-                </p>
-              </div>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Large dining kitchens and catering halls regularly prepare buffer quantities that go untouched. Without rapid coordination, safe food gets discarded.
+              </p>
             </Card>
 
-            <Card className="p-6 border-[var(--color-border)] flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--color-mustard-dark)] text-white font-['Fraunces'] font-bold flex items-center justify-center shrink-0">
-                2
+            <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-[var(--radius-md)] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)]">
+                  <Compass className="w-4 h-4" />
+                </div>
+                <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+                  Short-Distance Deliveries
+                </h3>
               </div>
-              <div className="space-y-1">
-                <h4 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">Collect and Deliver</h4>
-                <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                  Partner with campus canteens or local eateries to transport surplus food safely to designated shelters.
-                </p>
-              </div>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Keeping food deliveries hyperlocal (1 to 3 km) enables student and neighborhood couriers on foot and bicycle to deliver warm meals without motor vehicle expenses.
+              </p>
             </Card>
 
-            <Card className="p-6 border-[var(--color-border)] flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-emerald-800 text-white font-['Fraunces'] font-bold flex items-center justify-center shrink-0">
-                3
+            <Card className="p-5 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-[var(--radius-md)] bg-emerald-100 text-emerald-800">
+                  <Leaf className="w-4 h-4" />
+                </div>
+                <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+                  Direct Carbon Avoidance
+                </h3>
               </div>
-              <div className="space-y-1">
-                <h4 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">Document and Share</h4>
-                <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                  Log your drive details in the FoodBridge app to earn verified sustainability credits and leaderboards.
-                </p>
-              </div>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Food decomposing in landfills generates potent methane. Diverting 1 kg of food waste avoids an estimated 2.50 kg of CO₂e lifecycle emissions (UN FAO standard).
+              </p>
             </Card>
           </div>
 
-          {/* Registration Form Column */}
-          <div className="lg:col-span-6">
-            <Card className="p-8 border-[var(--color-border)] shadow-[var(--shadow-warm-md)] space-y-4">
-              <h3 className="font-['Fraunces'] text-xl font-bold text-[var(--color-forest-text)]">
-                Register for the Next Drive
-              </h3>
+          {/* Right: Interactive Impact Calculator */}
+          <div id="impact" className="lg:col-span-7">
+            <LandingImpactCalculator />
+          </div>
+        </div>
+      </section>
 
-              {regSubmitted ? (
-                <div className="p-6 rounded-[var(--radius-md)] bg-emerald-50 border border-emerald-300 text-center space-y-2">
-                  <div className="text-3xl">🎉</div>
-                  <h4 className="font-['Fraunces'] text-lg font-bold text-emerald-900">
-                    Registration Confirmed!
-                  </h4>
-                  <p className="text-xs text-emerald-800">
-                    Thank you for joining FoodBridge, <strong>{regName}</strong>! Check your inbox ({regEmail}) for orientation details.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => {
-                      setRegSubmitted(false);
-                      setRegName("");
-                      setRegEmail("");
-                      setRegOrg("");
-                    }}
-                    className="mt-3"
-                  >
-                    Register Another Member
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={handleDriveSignup} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] uppercase tracking-wider">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Alex Rivera"
-                      value={regName}
-                      onChange={(e) => setRegName(e.target.value)}
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] text-xs outline-none focus:border-[var(--color-leaf-green)]"
-                    />
-                  </div>
+      {/* =========================================================================
+          SECTION 6: TRUST, SAFETY & VERIFICATION
+          ========================================================================= */}
+      <section id="trust" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
+            Trust &amp; Transparency
+          </span>
+          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)]">
+            Built for Safe &amp; Accountable Rescues
+          </h2>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            FoodBridge combines donor timestamps, role verification, and public audit summaries to maintain safety.
+          </p>
+        </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] uppercase tracking-wider">
-                      College / Organization
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. State University"
-                      value={regOrg}
-                      onChange={(e) => setRegOrg(e.target.value)}
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] text-xs outline-none focus:border-[var(--color-leaf-green)]"
-                    />
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="p-6 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] flex items-center justify-center">
+              <Clock className="w-5 h-5" />
+            </div>
+            <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+              Donor Safe-Until Timers
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Every listing specifies when the food was prepared and its maximum safe holding window. Listings that expire without a courier claim are automatically hidden.
+            </p>
+          </Card>
 
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] uppercase tracking-wider">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="alex@university.edu"
-                      value={regEmail}
-                      onChange={(e) => setRegEmail(e.target.value)}
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] text-xs outline-none focus:border-[var(--color-leaf-green)]"
-                    />
-                  </div>
+          <Card className="p-6 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-tomato-alpha)] text-[var(--color-tomato-orange)] flex items-center justify-center">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+              Registered Shelter Hubs
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Surplus food is delivered exclusively to verified community shelters, NGOs, and food distribution centers with established meal distribution facilities.
+            </p>
+          </Card>
 
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold font-['Quicksand'] text-[var(--color-forest-text)] uppercase tracking-wider">
-                      Interest Area
-                    </label>
-                    <select
-                      value={regRole}
-                      onChange={(e) => setRegRole(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-surface)] text-xs outline-none focus:border-[var(--color-leaf-green)]"
-                    >
-                      <option value="volunteer">Student Volunteer</option>
-                      <option value="campus-lead">Campus Drive Lead</option>
-                      <option value="canteen-partner">Canteen / Food Partner</option>
-                      <option value="ngo">NGO / Community Center Partner</option>
-                    </select>
-                  </div>
+          <Card className="p-6 border-[var(--color-border)] bg-[var(--color-bg-surface)] space-y-3">
+            <div className="w-10 h-10 rounded-[var(--radius-md)] bg-purple-100 text-purple-800 flex items-center justify-center">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <h3 className="font-['Fraunces'] text-base font-bold text-[var(--color-forest-text)]">
+              Public Impact &amp; Audit Log
+            </h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Every completed distribution is recorded to our platform impact summary. Explore our monthly diverted meal records and audit log.
+            </p>
+            <Link to="/impact" className="inline-flex items-center gap-1 text-xs font-bold text-[var(--color-leaf-green)] hover:underline pt-1">
+              <span>View Quantified Impact Page ➔</span>
+            </Link>
+          </Card>
+        </div>
+      </section>
 
-                  <Button type="submit" variant="primary" className="w-full font-bold">
-                    Register Profile
-                  </Button>
-                </form>
-              )}
-            </Card>
+      {/* =========================================================================
+          SECTION 7: ABOUT THE PROJECT & 5 AIMS (SDG 2 & 12)
+          ========================================================================= */}
+      <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="p-8 rounded-[var(--radius-lg)] bg-[var(--color-bg-subtle)] border border-[var(--color-border)] space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-border)] pb-4">
+            <div>
+              <span className="text-xs font-bold font-['Quicksand'] uppercase tracking-wider text-[var(--color-leaf-green)]">
+                About the FoodBridge Initiative
+              </span>
+              <h2 className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-[var(--color-forest-text)] mt-1">
+                Five Project Aims &amp; UN Sustainable Development Goals
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold font-['Quicksand'] bg-amber-50 text-amber-800 border border-amber-200">
+                <Award className="w-3.5 h-3.5 text-amber-600" /> SDG 2: Zero Hunger
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold font-['Quicksand'] bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <ShieldAlert className="w-3.5 h-3.5 text-emerald-600" /> SDG 12: Responsible Consumption
+              </span>
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed font-['Inter'] max-w-3xl">
+            FoodBridge addresses the dual challenges of food waste and urban food insecurity by engineering a lightweight coordination system built on five foundational aims:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2">
+            <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-1.5">
+              <div className="font-['Fraunces'] text-sm font-bold text-[var(--color-leaf-green)] font-mono">01</div>
+              <h3 className="font-['Fraunces'] text-sm font-bold text-[var(--color-forest-text)]">Rapid Surplus Notification</h3>
+              <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+                Allowing dining facilities and caterers to post available portions within 60 seconds with safe-until timestamps.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-1.5">
+              <div className="font-['Fraunces'] text-sm font-bold text-[var(--color-leaf-green)] font-mono">02</div>
+              <h3 className="font-['Fraunces'] text-sm font-bold text-[var(--color-forest-text)]">Direct Volunteer Dispatch</h3>
+              <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+                Enabling local couriers on foot and bicycle to claim and execute hyperlocal pickups within 1 to 3 km.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-1.5">
+              <div className="font-['Fraunces'] text-sm font-bold text-[var(--color-leaf-green)] font-mono">03</div>
+              <h3 className="font-['Fraunces'] text-sm font-bold text-[var(--color-forest-text)]">Shelf-Life Prioritization</h3>
+              <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+                Color-coded countdown timers (green, yellow, red) that ensure urgent food is dispatched and expired food is hidden.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-1.5">
+              <div className="font-['Fraunces'] text-sm font-bold text-[var(--color-leaf-green)] font-mono">04</div>
+              <h3 className="font-['Fraunces'] text-sm font-bold text-[var(--color-forest-text)]">Transparent Accounting</h3>
+              <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+                Measuring verified meal numbers, food waste averted in kilograms, and calculated carbon emissions avoided.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-[var(--radius-md)] bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-1.5">
+              <div className="font-['Fraunces'] text-sm font-bold text-[var(--color-leaf-green)] font-mono">05</div>
+              <h3 className="font-['Fraunces'] text-sm font-bold text-[var(--color-forest-text)]">Community Recognition</h3>
+              <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+                Recognizing contributing dining kitchens, couriers, and shelters driving community impact.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 8: FAQ ACCORDION
+          ========================================================================= */}
+      <section id="faq" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">
+            Common Questions
+          </span>
+          <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold text-[var(--color-forest-text)]">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Everything you need to know about food safety, volunteering, and receiving food.
+          </p>
+        </div>
+
+        <LandingFaqAccordion />
+      </section>
+
+      {/* =========================================================================
+          SECTION 9: FINAL CONVERSION BANNER
+          ========================================================================= */}
+      <section id="get-involved" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[var(--radius-lg)] bg-[var(--color-leaf-green)] text-white p-8 sm:p-12 text-center shadow-[var(--shadow-warm-lg)] space-y-6">
+          <div className="max-w-2xl mx-auto space-y-2">
+            <h2 className="font-['Fraunces'] text-3xl sm:text-4xl font-extrabold">
+              Ready to Bridge the Food Waste Gap?
+            </h2>
+            <p className="text-sm sm:text-base text-emerald-100 font-['Inter'] leading-relaxed">
+              Whether you run a kitchen, cycle between daily stops, or feed the community, join the FoodBridge network today.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Button
+              to="/donate"
+              variant="mango"
+              size="lg"
+              className="bg-white text-[var(--color-forest-text)] hover:bg-emerald-50 border-transparent font-bold"
+            >
+              <span>Post Surplus Food ➔</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              className="bg-emerald-800 text-white hover:bg-emerald-900 border-emerald-700 font-bold"
+              onClick={() => openAuthModal({ role: "volunteer", tab: "quick" })}
+            >
+              <Truck className="w-4 h-4 mr-1.5" />
+              <span>Join as Volunteer</span>
+            </Button>
           </div>
         </div>
       </section>
     </div>
   );
 }
+
+export default LandingView;
