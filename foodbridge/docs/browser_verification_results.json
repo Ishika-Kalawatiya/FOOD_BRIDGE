@@ -1,0 +1,282 @@
+[
+  {
+    "id": "LANDING_LOAD",
+    "element": "Landing page URL",
+    "expected": "Load status 200 with title",
+    "status": "PASS",
+    "notes": "FoodBridge — Surplus Food Rescue Platform"
+  },
+  {
+    "id": "NAV_DESKTOP_HOME",
+    "element": "Navbar Home link",
+    "expected": "Present & clickable",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "NAV_DESKTOP_DONATE",
+    "element": "Navbar Donate link",
+    "expected": "Present & clickable",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "NAV_DESKTOP_COURIER",
+    "element": "Navbar Courier link",
+    "expected": "Present & clickable",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "NAV_DESKTOP_NGO",
+    "element": "Navbar NGO Hub link",
+    "expected": "Present & clickable",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "NAV_DESKTOP_PORTAL",
+    "element": "Navbar Portal link",
+    "expected": "Present & clickable",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "NAV_DESKTOP_IMPACT",
+    "element": "Navbar Impact link",
+    "expected": "Present & clickable",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "ANCHOR_PROBLEM",
+    "element": "Problem Anchor (footer a[href=\"#problem\"])",
+    "expected": "Scrolls to #problem",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "ANCHOR_HOWITWORKS",
+    "element": "HowItWorks Anchor (footer a[href=\"#how-it-works\"])",
+    "expected": "Scrolls to #how-it-works",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "ANCHOR_IMPACT",
+    "element": "Impact Anchor (footer a[href=\"#impact\"])",
+    "expected": "Scrolls to #impact",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "ANCHOR_GETINVOLVED",
+    "element": "GetInvolved Anchor (footer a[href=\"#get-involved\"])",
+    "expected": "Scrolls to #get-involved",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "CALCULATOR_SLIDER",
+    "element": "Landing Impact Calculator slider",
+    "expected": "Reacts to input & updates derived metrics",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "DRIVE_SIGNUP_FORM",
+    "element": "Rescue Drive Form Submission",
+    "expected": "Accepts input, submits, shows confirmation",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "SIMULATOR_STEP_ADVANCE",
+    "element": "Simulator Step Advancement",
+    "expected": "Advances from step 1 to 2",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "HERO_CTA_PORTAL",
+    "element": "Hero Launch Rescue Portal CTA",
+    "expected": "Present and links to /portal",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "WORKFLOW_CTA_DONATE",
+    "element": "How It Works Donate CTA",
+    "expected": "Present and links to /donate",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "WORKFLOW_CTA_COURIER",
+    "element": "How It Works Volunteer Courier CTA",
+    "expected": "Present and links to /courier",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "WORKFLOW_CTA_NGO",
+    "element": "How It Works NGO Shelter Hub CTA",
+    "expected": "Present and links to /ngo",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "WORKFLOW_CTA_IMPACT",
+    "element": "How It Works View Impact CTA",
+    "expected": "Present and links to /impact",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MOBILE_LANDING_LOAD",
+    "element": "Mobile landing page 375px",
+    "expected": "Renders responsively",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MOBILE_NAV_TOGGLE",
+    "element": "Hamburger menu drawer",
+    "expected": "Opens on click with nav links",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "DONATE_FORM_SUBMIT",
+    "element": "Surplus Listing Submission",
+    "expected": "Submits to API, shows toast, displays in board",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "COURIER_CLAIM_ACTION",
+    "element": "Accept Pickup • Claim Button",
+    "expected": "Claims listing and transitions status to Claimed",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "COURIER_COLLECT_ACTION",
+    "element": "Mark Food Collected Button",
+    "expected": "Collect button appears after claim",
+    "status": "PASS",
+    "notes": "Transition confirmed"
+  },
+  {
+    "id": "NGO_DISTRIBUTE_ACTION",
+    "element": "Confirm Distribution • Received Button",
+    "expected": "Transitions listing to Distributed",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "PORTAL_DASHBOARD_LOAD",
+    "element": "Unified Portal Dashboard",
+    "expected": "Renders active role view & metrics",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "NAV_ROLE_SWITCH",
+    "element": "Role Switcher button",
+    "expected": "Found in header",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "IMPACT_VIEW_LOAD",
+    "element": "Impact View page",
+    "expected": "Renders impact stats, monthly chart, audit log",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MODAL_ARIA_ROLES",
+    "element": "Modal Dialog Attributes",
+    "expected": "Has role=\"dialog\" and aria-modal=\"true\"",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MODAL_INITIAL_FOCUS",
+    "element": "Modal Initial Focus",
+    "expected": "Focus shifted to first focusable element inside modal",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MODAL_TAB_FOCUS_TRAP",
+    "element": "Modal Tab Trap",
+    "expected": "Repeated Tabs remain contained within modal",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MODAL_SHIFT_TAB_FOCUS_TRAP",
+    "element": "Modal Shift+Tab Trap",
+    "expected": "Shift+Tab remains contained within modal",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "MODAL_ESCAPE_CLOSE",
+    "element": "Modal Escape Key Listener",
+    "expected": "Pressing Escape closes the modal cleanly",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__PORTAL_HTML",
+    "element": "Redirect /portal.html",
+    "expected": "Redirects cleanly to /portal",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__COURIER_HTML",
+    "element": "Redirect /courier.html",
+    "expected": "Redirects cleanly to /courier",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__DONATE_HTML",
+    "element": "Redirect /donate.html",
+    "expected": "Redirects cleanly to /donate",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__NGO-HUB_HTML",
+    "element": "Redirect /ngo-hub.html",
+    "expected": "Redirects cleanly to /ngo",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__APP_HTML",
+    "element": "Redirect /app.html",
+    "expected": "Redirects cleanly to /portal",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__LANDING_HTML",
+    "element": "Redirect /landing.html",
+    "expected": "Redirects cleanly to /",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "REDIRECT__INDEX_HTML",
+    "element": "Redirect /index.html",
+    "expected": "Redirects cleanly to /",
+    "status": "PASS",
+    "notes": ""
+  }
+]

@@ -147,12 +147,26 @@ function setStoredListings(listings) {
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
+export async function checkBackendHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/api/health`);
+    if (res.ok) {
+      setDemoMode(false);
+      return true;
+    }
+    setDemoMode(false);
+    return false;
+  } catch (_networkErr) {
+    setDemoMode(true);
+    return false;
+  }
+}
+
 /**
  * Execute HTTP API requests with fallback to local mock store on connection failure.
  */
-export async function apiCall(path, { method = "GET", body, userId, userRole } = {}) {
+export async function apiCall(path, { method = "GET", body, userId } = {}) {
   const currentUserId = userId || localStorage.getItem("fb_user_id") || "1";
-  const currentUserRole = userRole || localStorage.getItem("fb_user_role") || "donor";
 
   try {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -160,7 +174,6 @@ export async function apiCall(path, { method = "GET", body, userId, userRole } =
       headers: {
         "Content-Type": "application/json",
         "x-user-id": String(currentUserId),
-        "x-user-role": String(currentUserRole),
       },
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -171,23 +184,28 @@ export async function apiCall(path, { method = "GET", body, userId, userRole } =
       const err = new Error(data.error || `Request failed with status ${res.status}`);
       err.status = res.status;
       err.data = data;
+      // Real backend response (4xx/5xx) -> not demo mode
+      setDemoMode(false);
       throw err;
     }
 
     setDemoMode(false);
     return data;
   } catch (err) {
-    // If backend returns an explicit HTTP error status (400, 401, 403, 409), rethrow it
-    if (err.status) throw err;
+    // If backend returns an explicit HTTP error status (400, 401, 403, 409, 500), rethrow it!
+    if (err.status) {
+      setDemoMode(false);
+      throw err;
+    }
 
-    // Otherwise (network failure, CORS, offline), use resilient mock storage
+    // Only for network error (Failed to fetch, connection refused, offline):
     console.warn(`[FoodBridge API] Backend unreachable at ${path}. Using offline fallback.`);
     setDemoMode(true);
-    return handleLocalMockApi(path, method, body, currentUserId, currentUserRole);
+    return handleLocalMockApi(path, method, body, currentUserId);
   }
 }
 
-function handleLocalMockApi(path, method, body, userId, userRole) {
+function handleLocalMockApi(path, method, body, userId) {
   let listings = getStoredListings();
 
   // GET /api/listings
@@ -353,31 +371,27 @@ export async function createListing(data, user) {
     method: "POST",
     body: payload,
     userId: user?.id || 1,
-    userRole: user?.role || "donor",
   });
 }
 
 export async function claimListing(id, user) {
   return apiCall(`/api/listings/${id}/claim`, {
     method: "POST",
-    userId: user?.id,
-    userRole: user?.role,
+    userId: user?.id || 2,
   });
 }
 
 export async function collectListing(id, user) {
   return apiCall(`/api/listings/${id}/collect`, {
     method: "POST",
-    userId: user?.id,
-    userRole: user?.role,
+    userId: user?.id || 2,
   });
 }
 
 export async function distributeListing(id, user) {
   return apiCall(`/api/listings/${id}/distribute`, {
     method: "POST",
-    userId: user?.id,
-    userRole: user?.role,
+    userId: user?.id || 3,
   });
 }
 

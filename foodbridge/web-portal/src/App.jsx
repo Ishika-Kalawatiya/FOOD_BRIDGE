@@ -6,7 +6,7 @@ import { AuthModal } from "./components/AuthModal";
 import { ToastProvider, useToast } from "./components/ui/Toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useListings } from "./hooks/useListings";
-import { subscribeDemoMode, fetchImpactSummary, fetchMonthlyImpact } from "./services/api";
+import { subscribeDemoMode, checkBackendHealth, fetchImpactSummary, fetchMonthlyImpact } from "./services/api";
 
 import { LandingView } from "./views/LandingView";
 import { DonateView } from "./views/DonateView";
@@ -61,6 +61,7 @@ function MainAppContent() {
   const [myOrgImpactData, setMyOrgImpactData] = useState(null);
 
   useEffect(() => {
+    checkBackendHealth();
     return subscribeDemoMode((active) => {
       setIsDemoMode(active);
     });

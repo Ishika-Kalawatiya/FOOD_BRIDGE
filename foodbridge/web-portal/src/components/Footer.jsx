@@ -102,6 +102,15 @@ export function Footer() {
                 </a>
               </li>
               <li>
+                <a
+                  href="#impact"
+                  onClick={(e) => handleAnchorClick(e, "#impact")}
+                  className="hover:text-[var(--color-leaf-green)] transition-colors"
+                >
+                  Live Impact Overview
+                </a>
+              </li>
+              <li>
                 <Link to="/impact" className="hover:text-[var(--color-leaf-green)] transition-colors">
                   Monthly Impact & Audits
                 </Link>

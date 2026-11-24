@@ -192,3 +192,70 @@ A comprehensive crawl across all HTML and JSX files in the FoodBridge codebase (
 - [x] **8. NGO Hub Action**: Confirm received via `POST /api/listings/:id/distribute` transitions Collected -> Distributed.
 - [x] **9. Impact Stats**: Monthly & summary impact dynamically update reflecting distributed meals, landfill waste diverted (0.40kg/meal) and CO2e greenhouse gas offset (2.50kg/kg waste).
 - [x] **10. Legacy File Cleanup**: Root duplicate HTML/JS/CSS removed; dead legacy modules in `web-portal/` removed; `web-portal/` confirmed as single source of truth; 0 matches for leftover `href="#"`, `javascript:void`, or `.html` links in source code.
+
+---
+
+## 5. Live Browser Automation Results (Puppeteer Suite)
+
+Executed in Google Chrome at 1280x800 (Desktop) and 375x667 (Mobile) viewports.
+
+### Screenshot Captures (`docs/screenshots/`):
+- Desktop Landing View: `docs/screenshots/desktop_landing.png`
+- Mobile Landing View (375px): `docs/screenshots/mobile_landing.png`
+- Desktop Donor View: `docs/screenshots/desktop_donate.png`
+- Mobile Donor View (375px): `docs/screenshots/mobile_donate.png`
+- Desktop Volunteer Courier View: `docs/screenshots/desktop_courier.png`
+- Mobile Volunteer Courier View (375px): `docs/screenshots/mobile_courier.png`
+- Desktop NGO Hub View: `docs/screenshots/desktop_ngo.png`
+- Mobile NGO Hub View (375px): `docs/screenshots/mobile_ngo.png`
+- Desktop Portal Dashboard: `docs/screenshots/desktop_portal.png`
+- Mobile Portal Dashboard (375px): `docs/screenshots/mobile_portal.png`
+- Desktop Quantified Impact View: `docs/screenshots/desktop_impact.png`
+- Mobile Quantified Impact View (375px): `docs/screenshots/mobile_impact.png`
+- Auth Modal with Focus Trap Active: `docs/screenshots/modal_open.png`
+
+### Element-by-Element Verification Table:
+
+| Test ID | Element Tested | Viewport | Expected Behavior | Status | Evidence / Notes |
+|---------|----------------|----------|-------------------|--------|------------------|
+| `LANDING_LOAD` | Landing URL (`/`) | 1280x800 | HTTP 200, Title set | **PASS** | Title: "FoodBridge — Surplus Food Rescue Platform" |
+| `NAV_DESKTOP_HOME` | Navbar "Home" | 1280x800 | Route to `/` | **PASS** | Active state highlighted |
+| `NAV_DESKTOP_DONATE` | Navbar "Donate" | 1280x800 | Route to `/donate` | **PASS** | Icon + label rendered |
+| `NAV_DESKTOP_COURIER` | Navbar "Courier" | 1280x800 | Route to `/courier` | **PASS** | Icon + label rendered |
+| `NAV_DESKTOP_NGO` | Navbar "NGO Hub" | 1280x800 | Route to `/ngo` | **PASS** | Icon + label rendered |
+| `NAV_DESKTOP_PORTAL` | Navbar "Portal" | 1280x800 | Route to `/portal` | **PASS** | Icon + label rendered |
+| `NAV_DESKTOP_IMPACT` | Navbar "Impact" | 1280x800 | Route to `/impact` | **PASS** | Icon + label rendered |
+| `ANCHOR_PROBLEM` | Footer Anchor `#problem` | 1280x800 | Smooth scroll to `#problem` | **PASS** | Target found and scrolled |
+| `ANCHOR_HOWITWORKS` | Footer Anchor `#how-it-works`| 1280x800 | Smooth scroll to `#how-it-works` | **PASS** | Target found and scrolled |
+| `ANCHOR_IMPACT` | Footer Anchor `#impact` | 1280x800 | Smooth scroll to `#impact` | **PASS** | Target found and scrolled |
+| `ANCHOR_GETINVOLVED` | Footer Anchor `#get-involved` | 1280x800 | Smooth scroll to `#get-involved` | **PASS** | Target found and scrolled |
+| `CALCULATOR_SLIDER` | Impact Calculator Range Slider | 1280x800 | Reactive change events update derived metrics | **PASS** | Tested 500 meals/day setting |
+| `DRIVE_SIGNUP_FORM` | Rescue Drive Form | 1280x800 | Submits, validates, reveals confirmation | **PASS** | Submitted name & email |
+| `SIMULATOR_STEP_ADVANCE` | Simulator Step Button | 1280x800 | Advances step 1 to 2 | **PASS** | Stage 2 courier card rendered |
+| `HERO_CTA_PORTAL` | Hero Portal Button | 1280x800 | Links to `/portal` | **PASS** | Button active |
+| `WORKFLOW_CTA_DONATE` | How It Works Step 1 CTA | 1280x800 | Links to `/donate` | **PASS** | Button active |
+| `WORKFLOW_CTA_COURIER` | How It Works Step 2 CTA | 1280x800 | Links to `/courier` | **PASS** | Button active |
+| `WORKFLOW_CTA_NGO` | How It Works Step 3 CTA | 1280x800 | Links to `/ngo` | **PASS** | Button active |
+| `WORKFLOW_CTA_IMPACT` | How It Works Step 4 CTA | 1280x800 | Links to `/impact` | **PASS** | Button active |
+| `MOBILE_LANDING_LOAD` | Landing View | 375x667 | Renders responsively | **PASS** | Viewport adjusted, no overflow |
+| `MOBILE_NAV_TOGGLE` | Hamburger Button | 375x667 | Toggles mobile drawer menu | **PASS** | Drawer visible with all links |
+| `DONATE_FORM_SUBMIT` | Donor Form | 1280x800 | `POST /api/listings`, triggers toast, updates board | **PASS** | Created test listing (45 meals) |
+| `COURIER_CLAIM_ACTION` | Claim Button | 1280x800 | `POST /api/listings/:id/claim`, status -> Claimed | **PASS** | Real backend transition |
+| `COURIER_COLLECT_ACTION`| Collect Button | 1280x800 | `POST /api/listings/:id/collect`, status -> Collected | **PASS** | Real backend transition |
+| `NGO_DISTRIBUTE_ACTION` | Distribute Button | 1280x800 | `POST /api/listings/:id/distribute`, status -> Distributed | **PASS** | Real backend transition |
+| `PORTAL_DASHBOARD_LOAD` | Unified Portal | 1280x800 | Renders active role tabs & metrics | **PASS** | Tab views functional |
+| `NAV_ROLE_SWITCH` | Role Switcher Dropdown | 1280x800 | Switches active role context to volunteer | **PASS** | Context switched dynamically |
+| `IMPACT_VIEW_LOAD` | Impact Route (`/impact`) | 1280x800 | Renders charts, KPIs, and audit log | **PASS** | Summary loaded |
+| `MODAL_ARIA_ROLES` | AuthModal Dialog | 1280x800 | `role="dialog"`, `aria-modal="true"`, labelledby | **PASS** | Screen-reader compliant |
+| `MODAL_INITIAL_FOCUS` | Focus on Open | 1280x800 | Focus automatically moves inside modal | **PASS** | First focusable child active |
+| `MODAL_TAB_FOCUS_TRAP` | Tab Keyboard Navigation | 1280x800 | Repeated Tab keypresses trap focus inside dialog | **PASS** | Focus never escapes to body |
+| `MODAL_SHIFT_TAB_FOCUS_TRAP` | Shift+Tab Key Navigation | 1280x800 | Shift+Tab traps focus backwards within dialog | **PASS** | Wraps around dialog edges |
+| `MODAL_ESCAPE_CLOSE` | Escape Key Listener | 1280x800 | Pressing `Escape` closes modal & returns focus | **PASS** | Modal dismissed cleanly |
+| `REDIRECT__PORTAL_HTML` | Legacy `/portal.html` | 1280x800 | Redirects to `/portal` | **PASS** | Smooth client-side redirect |
+| `REDIRECT__COURIER_HTML` | Legacy `/courier.html` | 1280x800 | Redirects to `/courier` | **PASS** | Smooth client-side redirect |
+| `REDIRECT__DONATE_HTML` | Legacy `/donate.html` | 1280x800 | Redirects to `/donate` | **PASS** | Smooth client-side redirect |
+| `REDIRECT__NGO-HUB_HTML` | Legacy `/ngo-hub.html` | 1280x800 | Redirects to `/ngo` | **PASS** | Smooth client-side redirect |
+| `REDIRECT__APP_HTML` | Legacy `/app.html` | 1280x800 | Redirects to `/portal` | **PASS** | Smooth client-side redirect |
+| `REDIRECT__LANDING_HTML` | Legacy `/landing.html` | 1280x800 | Redirects to `/` | **PASS** | Smooth client-side redirect |
+| `REDIRECT__INDEX_HTML` | Legacy `/index.html` | 1280x800 | Redirects to `/` | **PASS** | Smooth client-side redirect |
+

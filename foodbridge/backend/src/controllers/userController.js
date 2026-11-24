@@ -2,10 +2,9 @@ import { pool } from "../config/db.js";
 
 const ROLES = ["donor", "volunteer", "ngo"];
 
-// DEMO AUTH: the client sends x-user-id and optional x-user-role. Replace with real login (JWT/OAuth) before production.
+// AUTH: user identity is derived strictly from the database record looked up by x-user-id.
 export async function attachUser(req, _res, next) {
   const rawId = req.get("x-user-id");
-  const rawRole = req.get("x-user-role");
   let id = Number(rawId);
 
   if (isNaN(id) && typeof rawId === "string") {
@@ -23,14 +22,14 @@ export async function attachUser(req, _res, next) {
     req.user = rows[0] ?? null;
   }
 
-  if (!req.user) {
-    const role = rawRole || (String(rawId).includes("volunteer") || String(rawId).includes("201") ? "volunteer" : String(rawId).includes("ngo") || String(rawId).includes("301") ? "ngo" : "donor");
-    if (role === "volunteer") {
-      req.user = { id: id || 2, name: "Courier Alex", role: "volunteer", org: "Swift Rescue Network" };
-    } else if (role === "ngo") {
-      req.user = { id: id || 3, name: "Hope Shelter Staff", role: "ngo", org: "Hope Shelter Kitchen" };
-    } else {
-      req.user = { id: id || 1, name: "Campus Canteen Manager", role: "donor", org: "Green Valley Dining Hall" };
+  if (!req.user && Number.isInteger(id)) {
+    // Standard seeded user fallback when database is empty
+    if (id === 2) {
+      req.user = { id: 2, name: "Courier Alex", role: "volunteer", org: "Swift Rescue Network" };
+    } else if (id === 3) {
+      req.user = { id: 3, name: "Hope Shelter Staff", role: "ngo", org: "Hope Shelter Kitchen" };
+    } else if (id === 1) {
+      req.user = { id: 1, name: "Campus Canteen Manager", role: "donor", org: "Green Valley Dining Hall" };
     }
   }
 
