@@ -4,7 +4,7 @@ import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Loader } from "../components/ui/Loader";
 import { fetchImpactSummary, fetchMonthlyImpact, fetchAuditSummary } from "../services/api";
-import { calculateWasteKg, calculateCo2eKg } from "../constants/impact";
+import { calculateWasteKg, calculateCo2eKg, IMPACT_FOOTNOTE } from "../constants/impact";
 
 export function ImpactView() {
   const [loading, setLoading] = useState(true);
@@ -87,7 +87,7 @@ export function ImpactView() {
             {wasteKg.toLocaleString()} <span className="text-lg">kg</span>
           </div>
           <p className="text-xs text-[var(--color-text-muted)] mt-2">
-            Based on standard institutional kitchen portions of 0.40kg/meal.
+            Assumes an average portion weight of ~0.4 kg/meal.
           </p>
         </Card>
 
@@ -104,6 +104,11 @@ export function ImpactView() {
           </p>
         </Card>
       </div>
+
+      {/* Impact Footnote */}
+      <p className="text-xs text-center text-[var(--color-text-muted)] font-['Inter'] italic">
+        {IMPACT_FOOTNOTE}
+      </p>
 
       {/* Monthly Recovery Trajectory Table */}
       <Card className="p-6 bg-[var(--color-bg-surface)] border-[var(--color-border)] space-y-4">

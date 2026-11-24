@@ -212,7 +212,8 @@ function handleLocalMockApi(path, method, body, userId) {
 
   // GET /api/listings
   if (path.startsWith("/api/listings") && method === "GET") {
-    return listings;
+    const now = Date.now();
+    return listings.filter((l) => l.status !== "available" || !l.expires_at || new Date(l.expires_at).getTime() > now);
   }
 
   // POST /api/listings
@@ -317,13 +318,16 @@ function handleLocalMockApi(path, method, body, userId) {
 
   // GET /api/impact/monthly or /summary
   if (path.includes("/api/impact")) {
+    const now = Date.now();
     const collectedAndDistributed = listings.filter((l) => l.status === "collected" || l.status === "distributed");
     const totalMeals = collectedAndDistributed.reduce((sum, l) => sum + (l.meals || 0), 0);
-    const activeCount = listings.filter((l) => l.status === "available" || l.status === "claimed").length;
+    const availableCount = listings.filter((l) => l.status === "available" && (!l.expires_at || new Date(l.expires_at).getTime() > now)).length;
+    const activeCount = availableCount + listings.filter((l) => l.status === "claimed").length;
 
     return {
-      meals_diverted: totalMeals,
+      available: availableCount,
       active_listings: activeCount,
+      meals_diverted: totalMeals,
       meals: totalMeals,
       waste_kg: calculateWasteKg(totalMeals),
       co2e_kg: calculateCo2eKg(totalMeals),

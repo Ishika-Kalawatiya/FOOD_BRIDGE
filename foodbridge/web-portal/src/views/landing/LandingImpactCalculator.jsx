@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card } from "../../components/ui/Card";
-import { calculateWasteKg, calculateCo2eKg } from "../../constants/impact";
+import { calculateWasteKg, calculateCo2eKg, IMPACT_FOOTNOTE } from "../../constants/impact";
 
 export function LandingImpactCalculator() {
   const [dailyMeals, setDailyMeals] = useState(250);
@@ -83,7 +83,7 @@ export function LandingImpactCalculator() {
       </div>
 
       <p className="text-[11px] text-center text-[var(--color-text-muted)] font-['Inter'] leading-relaxed pt-1">
-        * Estimates based on UN FAO &amp; UNEP standards: 0.40 kg food portion per meal and 2.50 kg CO₂e avoided per kg food waste diverted from landfill.
+        {IMPACT_FOOTNOTE}
       </p>
     </Card>
   );

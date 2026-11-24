@@ -85,12 +85,38 @@ function handleMemoryQuery(text, params = []) {
     return { rows: [user] };
   }
 
+  if (sql.includes("meals_diverted") || sql.includes("SUM(meals)") || sql.includes("COUNT(*) FILTER")) {
+    const now = Date.now();
+    const available = memoryStore.listings.filter(l => l.status === "available" && (!l.expires_at || new Date(l.expires_at).getTime() > now)).length;
+    const claimed = memoryStore.listings.filter(l => l.status === "claimed").length;
+    const collected = memoryStore.listings.filter(l => l.status === "collected").length;
+    const distributed = memoryStore.listings.filter(l => l.status === "distributed").length;
+    const mealsDiverted = memoryStore.listings
+      .filter(l => l.status === "collected" || l.status === "distributed")
+      .reduce((acc, l) => acc + (Number(l.meals) || 0), 0);
+    return {
+      rows: [{
+        available,
+        claimed,
+        collected,
+        distributed,
+        active_listings: available + claimed,
+        meals_diverted: mealsDiverted,
+        total_meals: mealsDiverted,
+        meals: mealsDiverted,
+      }]
+    };
+  }
+
   if (sql.includes("SELECT l.*") || sql.includes("FROM listings")) {
     if (sql.includes("WHERE l.id = $1") || sql.includes("WHERE id = $1")) {
       const item = memoryStore.listings.find(l => l.id === Number(params[0]));
       return { rows: item ? [item] : [] };
     }
-    return { rows: memoryStore.listings };
+    const now = Date.now();
+    // Exclude expired unclaimed listings in mock store as in SQL
+    const rows = memoryStore.listings.filter(l => l.status !== "available" || !l.expires_at || new Date(l.expires_at).getTime() > now);
+    return { rows };
   }
 
   if (sql.includes("INSERT INTO listings")) {
@@ -139,12 +165,6 @@ function handleMemoryQuery(text, params = []) {
       }
       return { rows: [item] };
     }
-  }
-
-  if (sql.includes("meals_diverted") || sql.includes("SUM(meals)")) {
-    const totalMeals = memoryStore.listings.reduce((acc, l) => acc + (l.meals || 0), 0);
-    const activeListings = memoryStore.listings.filter(l => l.status === "available" || l.status === "claimed").length;
-    return { rows: [{ meals_diverted: totalMeals, active_listings: activeListings, total_meals: totalMeals, meals: totalMeals }] };
   }
 
   return { rows: [] };

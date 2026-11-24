@@ -100,7 +100,10 @@ export function LandingView({
         onLoginSuccess: async () => {
           try {
             await onAction(listingId, "claim");
-          } catch (_e) {}
+            toast.success("Delivery claimed successfully! View under Courier deliveries.");
+          } catch (err) {
+            toast.error(err.message || "Could not claim listing.");
+          }
         },
       });
       return;
@@ -114,7 +117,10 @@ export function LandingView({
         onLoginSuccess: async () => {
           try {
             await onAction(listingId, "claim");
-          } catch (_e) {}
+            toast.success("Delivery claimed successfully! View under Courier deliveries.");
+          } catch (err) {
+            toast.error(err.message || "Could not claim listing.");
+          }
         },
       });
       return;

@@ -8,14 +8,16 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useListings } from "./hooks/useListings";
 import { subscribeDemoMode, checkBackendHealth, fetchImpactSummary, fetchMonthlyImpact } from "./services/api";
 
+import { Loader } from "./components/ui/Loader";
+
 import { LandingView } from "./views/LandingView";
-import { DonateView } from "./views/DonateView";
-import { CourierView } from "./views/CourierView";
-import { NgoView } from "./views/NgoView";
-import { PortalView } from "./views/PortalView";
-import { ImpactView } from "./views/ImpactView";
-import { NotFoundView } from "./views/NotFoundView";
-import { GameRedirectView } from "./views/GameRedirectView";
+const DonateView = React.lazy(() => import("./views/DonateView").then((m) => ({ default: m.DonateView })));
+const CourierView = React.lazy(() => import("./views/CourierView").then((m) => ({ default: m.CourierView })));
+const NgoView = React.lazy(() => import("./views/NgoView").then((m) => ({ default: m.NgoView })));
+const PortalView = React.lazy(() => import("./views/PortalView").then((m) => ({ default: m.PortalView })));
+const ImpactView = React.lazy(() => import("./views/ImpactView").then((m) => ({ default: m.ImpactView })));
+const NotFoundView = React.lazy(() => import("./views/NotFoundView").then((m) => ({ default: m.NotFoundView })));
+const GameRedirectView = React.lazy(() => import("./views/GameRedirectView").then((m) => ({ default: m.GameRedirectView })));
 
 /**
  * Handles smooth scrolling to landing anchors (#problem, #how-it-works, #impact, #get-involved)
@@ -102,7 +104,8 @@ function MainAppContent() {
 
       {/* Main Route Content */}
       <main className="flex-1">
-        <Routes>
+        <React.Suspense fallback={<Loader text="Loading FoodBridge view..." className="py-20" />}>
+          <Routes>
           {/* Main SPA Pages */}
           <Route
             path="/"
@@ -185,6 +188,7 @@ function MainAppContent() {
           {/* 404 Catch-all */}
           <Route path="*" element={<NotFoundView />} />
         </Routes>
+        </React.Suspense>
       </main>
 
       {/* Shared Unified Footer */}

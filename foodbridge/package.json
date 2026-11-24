@@ -6,6 +6,7 @@
   "scripts": {
     "build": "npm --prefix web-portal run build",
     "build:portal": "npm --prefix web-portal run build",
+    "preview": "npm --prefix web-portal run preview",
     "dev": "npm --prefix web-portal run dev",
     "dev:all": "npm --prefix backend run dev & npm --prefix web-portal run dev",
     "install:all": "npm --prefix backend install && npm --prefix game-client install && npm --prefix web-portal install",

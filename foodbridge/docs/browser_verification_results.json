@@ -91,30 +91,51 @@
     "notes": "States: true -> false -> true"
   },
   {
+    "id": "FAQ_ACCORDION_SPACE_KEY",
+    "element": "FAQ Accordion Space-Key Toggle",
+    "expected": "Toggles aria-expanded cleanly via Space key",
+    "status": "PASS",
+    "notes": "States: true -> false -> true"
+  },
+  {
     "id": "ANCHOR_PROBLEM",
     "element": "Problem Anchor (footer a[href=\"#problem\"])",
-    "expected": "Smooth scrolls to #problem",
+    "expected": "Smooth scrolls to #problem (Scroll: 0px -> 2465px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "ANCHOR_HOWITWORKS",
     "element": "HowItWorks Anchor (footer a[href=\"#how-it-works\"])",
-    "expected": "Smooth scrolls to #how-it-works",
+    "expected": "Smooth scrolls to #how-it-works (Scroll: 0px -> 1457px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "ANCHOR_IMPACT",
     "element": "Impact Anchor (footer a[href=\"#impact\"])",
-    "expected": "Smooth scrolls to #impact",
+    "expected": "Smooth scrolls to #impact (Scroll: 0px -> 2610px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "ANCHOR_GETINVOLVED",
     "element": "GetInvolved Anchor (footer a[href=\"#get-involved\"])",
-    "expected": "Smooth scrolls to #get-involved",
+    "expected": "Smooth scrolls to #get-involved (Scroll: 0px -> 4736px)",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "QUEUED_CLAIM_AFTER_LOGIN",
+    "element": "Queued Claim Completing After Volunteer Login",
+    "expected": "Authenticates as volunteer and executes queued claim automatically",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "IMPACT_FOOTNOTE_PRESENCE",
+    "element": "Impact Footnote Check",
+    "expected": "Exact FAO-derived footnote present on both landing calculator and /impact",
     "status": "PASS",
     "notes": ""
   },
@@ -171,6 +192,20 @@
     "id": "ROUTE_IMPACT_CHECK",
     "element": "Impact Route (/impact)",
     "expected": "Loads cleanly & functions without regressions",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "STATS_STRIP_BACKEND_STOPPED_FALLBACK",
+    "element": "Live Stats Strip Fallback (Backend Stopped)",
+    "expected": "Gracefully renders fallback 0 / initial stats without layout shift when backend server is stopped",
+    "status": "PASS",
+    "notes": ""
+  },
+  {
+    "id": "STATS_STRIP_ZERO_DATABASE",
+    "element": "Live Stats Strip Zero-Database Resilience",
+    "expected": "Cleanly displays 0 without depending on non-empty database records",
     "status": "PASS",
     "notes": ""
   }

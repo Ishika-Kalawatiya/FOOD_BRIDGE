@@ -50,6 +50,12 @@ export function LandingFaqAccordion() {
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 onClick={() => toggle(idx)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " " || e.code === "Space") {
+                    e.preventDefault();
+                    toggle(idx);
+                  }
+                }}
                 className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 font-['Fraunces'] text-sm sm:text-base font-bold text-[var(--color-forest-text)] hover:text-[var(--color-leaf-green)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-leaf-green)] transition-colors"
               >
                 <span>{faq.q}</span>

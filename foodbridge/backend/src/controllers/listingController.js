@@ -104,6 +104,7 @@ export async function pipelineSummary(_req, res) {
          COUNT(*) FILTER (WHERE status='claimed')::int AS claimed,
          COUNT(*) FILTER (WHERE status='collected')::int AS collected,
          COUNT(*) FILTER (WHERE status='distributed')::int AS distributed,
+         (COUNT(*) FILTER (WHERE status='available' AND expires_at > now()) + COUNT(*) FILTER (WHERE status='claimed'))::int AS active_listings,
          COALESCE(SUM(meals) FILTER (WHERE status IN ('collected','distributed')),0)::int AS meals_diverted
        FROM listings`
     );
