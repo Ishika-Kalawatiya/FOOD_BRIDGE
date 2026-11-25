@@ -4,7 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch --env-file=../.env src/server.js",
-    "start": "node --env-file=../.env src/server.js"
+    "start": "node --env-file=../.env src/server.js",
+    "db:migrate": "node --env-file=../.env database/migrate.js",
+    "db:seed": "node --env-file=../.env database/seed.js",
+    "db:init": "node --env-file=../.env database/migrate.js && node --env-file=../.env database/seed.js",
+    "test": "node --env-file=../.env --test test/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
