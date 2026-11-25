@@ -60,22 +60,6 @@ export function Navbar({
           <Link to="/" className="flex items-center gap-2 group" aria-label="FoodBridge Homepage">
             <Logo className="w-10 h-10" showText={true} />
           </Link>
-
-          {/* SDG Indicator (Desktop) */}
-          <div className="hidden xl:flex items-center gap-1.5 ml-2">
-            <span
-              title="SDG 2: Zero Hunger"
-              className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1"
-            >
-              <Award className="w-3 h-3 text-amber-600" /> SDG 2
-            </span>
-            <span
-              title="SDG 12: Responsible Consumption"
-              className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1"
-            >
-              <ShieldAlert className="w-3 h-3 text-emerald-600" /> SDG 12
-            </span>
-          </div>
         </div>
 
         {/* Center: Desktop Nav Links */}

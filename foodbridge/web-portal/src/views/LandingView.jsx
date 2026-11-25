@@ -53,7 +53,8 @@ export function LandingView({
       meta: "📍 Campus Central Canteen • ⌛ Safe for ~2h 15m",
       progress: 33,
       desc: "Kitchen completes dining service with 50 safe, untouched meals. Donor creates a surplus listing with a verified safe-until window.",
-      actionText: "Advance to Courier Pickup ➔",
+      nextStepLabel: "Next: Courier Pickup ➔",
+      portalLabel: "Go to Donor Hub",
       portalRole: "donor",
       portalPath: "/donate",
     },
@@ -65,7 +66,8 @@ export function LandingView({
       meta: "🚴 Courier Alex assigned • Pickup from Gate 3",
       progress: 66,
       desc: "Nearby volunteer courier accepts the delivery on bicycle, arrives at the kitchen loading area, and collects the meal batch.",
-      actionText: "Advance to Shelter Delivery ➔",
+      nextStepLabel: "Next: Shelter Delivery ➔",
+      portalLabel: "Go to Courier Board",
       portalRole: "volunteer",
       portalPath: "/courier",
     },
@@ -77,7 +79,8 @@ export function LandingView({
       meta: "🏢 Hope Community Shelter • Verified distributed",
       progress: 100,
       desc: "Meals arrive warm at the shelter kitchen and are served to families. Receipt is logged to public community impact metrics.",
-      actionText: "Restart Rescue Simulation ↺",
+      nextStepLabel: "Restart Workflow ↺",
+      portalLabel: "Go to Shelter Hub",
       portalRole: "ngo",
       portalPath: "/ngo",
     },
@@ -255,23 +258,23 @@ export function LandingView({
               </div>
 
               {/* Simulation Controls */}
-              <div className="pt-4 flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleNextSimStep}
-                  className="flex-1 font-bold"
-                >
-                  {currentSim.actionText}
-                </Button>
+              <div className="pt-4 flex flex-col sm:flex-row items-center gap-2.5">
                 <Button
                   to={currentSim.portalPath}
                   variant="primary"
                   size="sm"
-                  className="flex-1 font-bold"
+                  className="w-full sm:flex-1 font-bold justify-center"
                   onClick={() => setActiveRole(currentSim.portalRole)}
                 >
-                  Open View ➔
+                  {currentSim.portalLabel} ➔
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleNextSimStep}
+                  className="w-full sm:flex-1 font-bold justify-center"
+                >
+                  {currentSim.nextStepLabel}
                 </Button>
               </div>
             </Card>
@@ -668,16 +671,8 @@ export function LandingView({
                 About the FoodBridge Initiative
               </span>
               <h2 className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-[var(--color-forest-text)] mt-1">
-                Five Project Aims &amp; UN Sustainable Development Goals
+                Five Project Aims &amp; UN Sustainable Development Goals (SDG 2 &amp; SDG 12)
               </h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold font-['Quicksand'] bg-amber-50 text-amber-800 border border-amber-200">
-                <Award className="w-3.5 h-3.5 text-amber-600" /> SDG 2: Zero Hunger
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold font-['Quicksand'] bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <ShieldAlert className="w-3.5 h-3.5 text-emerald-600" /> SDG 12: Responsible Consumption
-              </span>
             </div>
           </div>
 
