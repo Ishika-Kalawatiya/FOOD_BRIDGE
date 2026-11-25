@@ -1,5 +1,4 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "backend": {
       "root": "foodbridge/backend",
@@ -16,9 +15,27 @@
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "destination": {
         "service": "backend"
+      }
+    },
+    {
+      "source": "/game",
+      "destination": {
+        "service": "game-client"
+      }
+    },
+    {
+      "source": "/game/(.*)",
+      "destination": {
+        "service": "game-client"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web-portal"
       }
     }
   ]
