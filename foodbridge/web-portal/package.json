@@ -19,9 +19,11 @@
     "vite": "^5.4.0"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.51.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.6"
   }
 }

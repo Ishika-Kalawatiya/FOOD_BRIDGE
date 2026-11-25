@@ -77,13 +77,18 @@ const memoryStore = {
       title: "50 Servings Fresh Veg Curry & Rice",
       meals: 50,
       pickup_address: "Student Center Gate 3, Central Campus",
+      dropoff_address: "Hope Community Shelter, Central Campus",
+      pickup_latitude: 12.9716,
+      pickup_longitude: 77.5946,
+      dropoff_latitude: 12.9796,
+      dropoff_longitude: 77.604,
       notes: "Packed in sanitized hot containers. Ready for immediate pickup.",
       expires_at: new Date(Date.now() + 120 * 60000).toISOString(),
       status: "available",
       volunteer_id: null,
       volunteer_name: null,
-      ngo_id: null,
-      ngo_org: null,
+      ngo_id: 3,
+      ngo_org: "Hope Community Shelter",
       created_at: new Date(Date.now() - 15 * 60000).toISOString(),
     },
     {
@@ -94,13 +99,18 @@ const memoryStore = {
       title: "35 Packets Fresh Sandwiches & Fruit",
       meals: 35,
       pickup_address: "Faculty Club Dining, West Wing",
+      dropoff_address: "Hope Community Shelter, Central Campus",
+      pickup_latitude: 12.9682,
+      pickup_longitude: 77.587,
+      dropoff_latitude: 12.9796,
+      dropoff_longitude: 77.604,
       notes: "Vegetarian and vegan options clearly labeled.",
       expires_at: new Date(Date.now() + 60 * 60000).toISOString(),
       status: "available",
       volunteer_id: null,
       volunteer_name: null,
-      ngo_id: null,
-      ngo_org: null,
+      ngo_id: 3,
+      ngo_org: "Hope Community Shelter",
       created_at: new Date(Date.now() - 30 * 60000).toISOString(),
     },
     {
@@ -111,19 +121,25 @@ const memoryStore = {
       title: "40 Portions Pasta & Salad Trays",
       meals: 40,
       pickup_address: "Main Kitchen Receiving Dock",
+      dropoff_address: "Hope Community Shelter, Central Campus",
+      pickup_latitude: 12.9716,
+      pickup_longitude: 77.5946,
+      dropoff_latitude: 12.9796,
+      dropoff_longitude: 77.604,
       notes: "Chilled storage. Assigned to Courier Alex.",
       expires_at: new Date(Date.now() + 90 * 60000).toISOString(),
-      status: "claimed",
+      status: "accepted",
       volunteer_id: 2,
       volunteer_name: "Courier Alex",
-      ngo_id: null,
-      ngo_org: null,
+      ngo_id: 3,
+      ngo_org: "Hope Community Shelter",
       created_at: new Date(Date.now() - 60 * 60000).toISOString(),
       claimed_at: new Date(Date.now() - 10 * 60000).toISOString(),
     },
   ],
   audits: [],
   scores: [],
+  certificates: [],
 };
 
 export const pool = {
@@ -163,6 +179,53 @@ function handleMemoryQuery(text, params = []) {
 
   if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") {
     return { rows: [], rowCount: 0 };
+  }
+
+  if (sql.includes("INSERT INTO service_certificates")) {
+    const existing = memoryStore.certificates.find(
+      (certificate) => certificate.user_id === Number(params[1]) && certificate.lantern_id === params[4]
+    );
+    if (existing) return { rows: [], rowCount: 0 };
+    const certificate = {
+      certificate_id: params[0],
+      user_id: Number(params[1]),
+      user_name: params[2],
+      role: params[3],
+      lantern_id: params[4],
+      listing_id: Number(params[5]),
+      listing_title: params[6],
+      meals: Number(params[7]),
+      issued_at: params[8],
+      signature: params[9],
+    };
+    memoryStore.certificates.push(certificate);
+    return { rows: [certificate], rowCount: 1 };
+  }
+
+  if (sql.includes("FROM service_certificates")) {
+    if (sql.includes("WHERE user_id = $1")) {
+      const certificate = memoryStore.certificates.find(
+        (item) => item.user_id === Number(params[0]) && item.lantern_id === params[1]
+      );
+      return { rows: certificate ? [certificate] : [] };
+    }
+    if (sql.includes("WHERE certificate_id = $1")) {
+      const certificate = memoryStore.certificates.find((item) => item.certificate_id === params[0]);
+      return { rows: certificate ? [certificate] : [] };
+    }
+  }
+
+  if (sql.includes("SELECT id, title, meals, status FROM listings")) {
+    const ownerColumn = ["donor_id", "volunteer_id", "ngo_id"].find((column) =>
+      sql.includes(`WHERE ${column} = $1`)
+    );
+    const allowedStatuses = ownerColumn === "volunteer_id"
+      ? ["delivered", "distributed"]
+      : ["available", "accepted", "arrived_at_pickup", "picked_up", "out_for_delivery", "arrived_at_dropoff", "delivered", "distributed"];
+    const listing = memoryStore.listings
+      .filter((item) => item[ownerColumn] === Number(params[0]) && allowedStatuses.includes(item.status))
+      .sort((left, right) => Number(right.id) - Number(left.id))[0];
+    return { rows: listing ? [{ id: listing.id, title: listing.title, meals: listing.meals, status: listing.status }] : [] };
   }
 
   // Users queries
@@ -212,11 +275,12 @@ function handleMemoryQuery(text, params = []) {
     const available = memoryStore.listings.filter(
       (l) => l.status === "available" && (!l.expires_at || new Date(l.expires_at).getTime() > now)
     ).length;
-    const claimed = memoryStore.listings.filter((l) => l.status === "claimed").length;
-    const collected = memoryStore.listings.filter((l) => l.status === "collected").length;
+    const claimed = memoryStore.listings.filter((l) => l.status === "accepted").length;
+    const collected = memoryStore.listings.filter((l) => ["picked_up", "out_for_delivery"].includes(l.status)).length;
+    const delivered = memoryStore.listings.filter((l) => l.status === "delivered").length;
     const distributed = memoryStore.listings.filter((l) => l.status === "distributed").length;
     const mealsDiverted = memoryStore.listings
-      .filter((l) => l.status === "collected" || l.status === "distributed")
+      .filter((l) => ["picked_up", "out_for_delivery", "delivered", "distributed"].includes(l.status))
       .reduce((acc, l) => acc + (Number(l.meals) || 0), 0);
 
     return {
@@ -225,8 +289,9 @@ function handleMemoryQuery(text, params = []) {
           available,
           claimed,
           collected,
+          delivered,
           distributed,
-          active_listings: available + claimed,
+          active_listings: available + memoryStore.listings.filter((l) => ["accepted", "arrived_at_pickup", "picked_up", "out_for_delivery", "arrived_at_dropoff"].includes(l.status)).length,
           meals_diverted: mealsDiverted,
           total_meals: mealsDiverted,
           meals: mealsDiverted,
@@ -236,16 +301,40 @@ function handleMemoryQuery(text, params = []) {
   }
 
   // Select listings query
+  if (sql.includes("SELECT l.id, l.status") && sql.includes("volunteer_location_updated_at")) {
+    let rows = memoryStore.listings.filter((l) => ["accepted", "arrived_at_pickup", "picked_up", "out_for_delivery", "arrived_at_dropoff", "delivered"].includes(l.status));
+    if (sql.includes("l.donor_id = $1")) rows = rows.filter((l) => l.donor_id === Number(params[0]));
+    if (sql.includes("l.volunteer_id = $1")) rows = rows.filter((l) => l.volunteer_id === Number(params[0]));
+    return { rows };
+  }
+
   if (sql.includes("SELECT l.*") || sql.includes("FROM listings")) {
+    const withContacts = (item) => {
+      if (!item) return item;
+      const donor = memoryStore.users.find((user) => user.id === item.donor_id);
+      const volunteer = memoryStore.users.find((user) => user.id === item.volunteer_id);
+      const ngo = memoryStore.users.find((user) => user.id === item.ngo_id);
+      return {
+        ...item,
+        donor_name: item.donor_name || donor?.name,
+        donor_org: item.donor_org || donor?.org,
+        donor_phone: donor?.phone || null,
+        volunteer_name: item.volunteer_name || volunteer?.name,
+        volunteer_phone: volunteer?.phone || null,
+        ngo_name: ngo?.name || null,
+        ngo_org: item.ngo_org || ngo?.org || null,
+        ngo_phone: ngo?.phone || null,
+      };
+    };
     if (sql.includes("WHERE l.id = $1") || sql.includes("WHERE id = $1")) {
       const item = memoryStore.listings.find((l) => l.id === Number(params[0]));
-      return { rows: item ? [item] : [] };
+      return { rows: item ? [withContacts(item)] : [] };
     }
     // Filter out expired unclaimed listings
     const rows = memoryStore.listings.filter(
       (l) => l.status !== "available" || !l.expires_at || new Date(l.expires_at).getTime() > now
     );
-    return { rows };
+    return { rows: rows.map(withContacts) };
   }
 
   // Insert listing query
@@ -253,7 +342,9 @@ function handleMemoryQuery(text, params = []) {
     const id = memoryStore.listings.length + 1;
     const donorId = Number(params[0]) || 1;
     const donor = memoryStore.users.find((u) => u.id === donorId) || memoryStore.users[0];
-    const mins = Number(params[5]) || 120;
+    const ngoId = params[9] == null ? null : Number(params[9]);
+    const ngo = memoryStore.users.find((user) => user.id === ngoId);
+    const mins = Number(params[11]) || 120;
     const item = {
       id,
       donor_id: donorId,
@@ -262,13 +353,18 @@ function handleMemoryQuery(text, params = []) {
       title: params[1],
       meals: Number(params[2]),
       pickup_address: params[3],
-      notes: params[4] || null,
+      dropoff_address: params[4] || null,
+      pickup_latitude: params[5] ?? null,
+      pickup_longitude: params[6] ?? null,
+      dropoff_latitude: params[7] ?? null,
+      dropoff_longitude: params[8] ?? null,
+      notes: params[10] || null,
       expires_at: new Date(now + mins * 60000).toISOString(),
       status: "available",
       volunteer_id: null,
       volunteer_name: null,
-      ngo_id: null,
-      ngo_org: null,
+      ngo_id: ngoId,
+      ngo_org: ngo?.org || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -282,11 +378,47 @@ function handleMemoryQuery(text, params = []) {
     const item = memoryStore.listings.find((l) => l.id === id);
     if (!item) return { rows: [], rowCount: 0 };
 
-    if (sql.includes("SET status = 'claimed'") || sql.includes("SET status='claimed'")) {
+    if (sql.includes("SET ngo_id = $2") && sql.includes("dropoff_address = $3")) {
+      if (item.status !== "available") {
+        return { rows: [], rowCount: 0 };
+      }
+      item.ngo_id = Number(params[1]);
+      const ngo = memoryStore.users.find((u) => u.id === item.ngo_id);
+      if (ngo) item.ngo_org = ngo.org || ngo.name;
+      item.dropoff_address = params[2];
+      item.dropoff_latitude = Number(params[3]);
+      item.dropoff_longitude = Number(params[4]);
+      return { rows: [item], rowCount: 1 };
+    }
+
+    if (sql.includes("SET volunteer_latitude")) {
+      if (item.volunteer_id !== Number(params[7]) || item.status !== params[8]) {
+        return { rows: [], rowCount: 0 };
+      }
+      item.volunteer_latitude = Number(params[1]);
+      item.volunteer_longitude = Number(params[2]);
+      item.volunteer_location_updated_at = new Date().toISOString();
+      item.status = params[3];
+      if (params[4]) item.arrived_at_pickup_at = params[4];
+      if (params[5]) item.arrived_at_dropoff_at = params[5];
+      if (params[6]) item.delivered_at = params[6];
+      return { rows: [item], rowCount: 1 };
+    }
+
+    if (sql.includes("SET status = 'delivered'") || sql.includes("SET status='delivered'")) {
+      if (item.volunteer_id !== Number(params[1]) || !["out_for_delivery", "arrived_at_dropoff"].includes(item.status)) {
+        return { rows: [], rowCount: 0 };
+      }
+      item.status = "delivered";
+      item.delivered_at = new Date().toISOString();
+      return { rows: [{ id: item.id, status: item.status, delivered_at: item.delivered_at }], rowCount: 1 };
+    }
+
+    if (sql.includes("SET status = 'accepted'") || sql.includes("SET status='accepted'")) {
       if (item.status !== "available" || (item.expires_at && new Date(item.expires_at).getTime() <= now)) {
         return { rows: [], rowCount: 0 };
       }
-      item.status = "claimed";
+      item.status = "accepted";
       item.volunteer_id = Number(params[1]);
       const vol = memoryStore.users.find((u) => u.id === item.volunteer_id);
       if (vol) item.volunteer_name = vol.name;
@@ -294,17 +426,44 @@ function handleMemoryQuery(text, params = []) {
       return { rows: [item], rowCount: 1 };
     }
 
-    if (sql.includes("SET status = 'collected'") || sql.includes("SET status='collected'")) {
-      if (item.status !== "claimed" || item.volunteer_id !== Number(params[1])) {
+    if (sql.includes("SET status = 'picked_up'") || sql.includes("SET status='picked_up'")) {
+      if (item.status !== "arrived_at_pickup" || item.volunteer_id !== Number(params[1])) {
         return { rows: [], rowCount: 0 };
       }
-      item.status = "collected";
+      item.status = "picked_up";
       item.collected_at = new Date().toISOString();
       return { rows: [item], rowCount: 1 };
     }
 
+    if (sql.includes("SET status = 'arrived_at_pickup'") || sql.includes("SET status='arrived_at_pickup'")) {
+      if (item.status !== "accepted" || item.volunteer_id !== Number(params[1])) {
+        return { rows: [], rowCount: 0 };
+      }
+      item.status = "arrived_at_pickup";
+      item.arrived_at_pickup_at = new Date().toISOString();
+      return { rows: [item], rowCount: 1 };
+    }
+
+    if (sql.includes("SET status = 'out_for_delivery'") || sql.includes("SET status='out_for_delivery'")) {
+      if (item.status !== "picked_up" || item.volunteer_id !== Number(params[1])) {
+        return { rows: [], rowCount: 0 };
+      }
+      item.status = "out_for_delivery";
+      item.out_for_delivery_at = new Date().toISOString();
+      return { rows: [item], rowCount: 1 };
+    }
+
+    if (sql.includes("SET status = 'arrived_at_dropoff'") || sql.includes("SET status='arrived_at_dropoff'")) {
+      if (item.status !== "out_for_delivery" || item.volunteer_id !== Number(params[1])) {
+        return { rows: [], rowCount: 0 };
+      }
+      item.status = "arrived_at_dropoff";
+      item.arrived_at_dropoff_at = new Date().toISOString();
+      return { rows: [item], rowCount: 1 };
+    }
+
     if (sql.includes("SET status = 'distributed'") || sql.includes("SET status='distributed'")) {
-      if (item.status !== "collected") {
+      if (item.status !== "delivered") {
         return { rows: [], rowCount: 0 };
       }
       item.status = "distributed";
@@ -325,7 +484,7 @@ function handleMemoryQuery(text, params = []) {
 
     if (sql.includes("status = 'expired'")) {
       const expiredItems = memoryStore.listings.filter(
-        (l) => (l.status === "available" || l.status === "claimed") && l.expires_at && new Date(l.expires_at).getTime() <= now
+        (l) => ["available", "accepted", "arrived_at_pickup"].includes(l.status) && l.expires_at && new Date(l.expires_at).getTime() <= now
       );
       expiredItems.forEach((l) => {
         l.status = "expired";

@@ -1,15 +1,22 @@
 import React, { useState } from "react";
-import { PlusCircle, Clock, MapPin, Utensils, Sparkles, CheckCircle2 } from "lucide-react";
+import { PlusCircle, Sparkles, CheckCircle2, LocateFixed, Building2 } from "lucide-react";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
-import { Input, Select, Textarea } from "./ui/FormField";
+import { Input, Textarea } from "./ui/FormField";
 import { useToast } from "./ui/Toast";
+import { parseCoordinatePair } from "../utils/geo";
+import { CoordinatePicker } from "./CoordinatePicker";
+import { geocodeAddress, reverseGeocode } from "../services/maps";
 
 export function DonorForm({ onPostListing, currentUser }) {
   const [title, setTitle] = useState("");
   const [meals, setMeals] = useState(30);
   const [expiresInMinutes, setExpiresInMinutes] = useState(120);
   const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupLatitude, setPickupLatitude] = useState("");
+  const [pickupLongitude, setPickupLongitude] = useState("");
+  const [locationBias, setLocationBias] = useState(null);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -27,8 +34,55 @@ export function DonorForm({ onPostListing, currentUser }) {
     setMeals(75);
     setExpiresInMinutes(90);
     setPickupAddress("Campus Student Center, Gate 2 Loading Bay");
+    setPickupLatitude("12.971600");
+    setPickupLongitude("77.594600");
     setNotes("100% Pure Vegetarian. Packed in sanitized thermal boxes. Hot and ready for dispatch.");
-    toast.info("Auto-filled sample surplus details.");
+    toast.info("Auto-filled sample donor pickup details.");
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("This browser does not support device location.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const coordinates = { latitude: coords.latitude, longitude: coords.longitude };
+        setLocationBias(coordinates);
+        setPickupLatitude(coords.latitude.toFixed(6));
+        setPickupLongitude(coords.longitude.toFixed(6));
+        reverseGeocode(coords.latitude, coords.longitude)
+          .then((address) => {
+            setPickupAddress(address);
+            toast.success("Current pickup location added.");
+          })
+          .catch((error) => {
+            if (!pickupAddress.trim()) {
+              setPickupAddress(`${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`);
+            }
+            toast.info(`Pickup coordinates added. ${error.message}`);
+          });
+      },
+      (error) => toast.error(error.message || "Could not read device location."),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
+  const savePickedLocation = (coordinates) => {
+    setPickupLatitude(coordinates.latitude.toFixed(6));
+    setPickupLongitude(coordinates.longitude.toFixed(6));
+    setLocationPickerOpen(false);
+    reverseGeocode(coordinates.latitude, coordinates.longitude)
+      .then((address) => {
+        setPickupAddress(address);
+        toast.success("Pickup address updated from the map pin.");
+      })
+      .catch((error) => {
+        if (!pickupAddress.trim()) {
+          setPickupAddress(`${coordinates.latitude.toFixed(5)}, ${coordinates.longitude.toFixed(5)}`);
+        }
+        toast.info(`Pickup map pin saved. ${error.message}`);
+      });
   };
 
   const handleSubmit = async (e) => {
@@ -48,6 +102,47 @@ export function DonorForm({ onPostListing, currentUser }) {
       return;
     }
 
+    const pickupPair = parseCoordinatePair(pickupAddress);
+    if (Boolean(pickupLatitude) !== Boolean(pickupLongitude)) {
+      toast.error("Enter both latitude and longitude for pickup, or choose a point on the map.");
+      return;
+    }
+
+    const needsAddressLookup = (!pickupLatitude || !pickupLongitude) && !pickupPair;
+    let bias = locationBias;
+    if (needsAddressLookup && !bias && navigator.geolocation) {
+      bias = await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) => resolve({ latitude: coords.latitude, longitude: coords.longitude }),
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        );
+      });
+      if (bias) setLocationBias(bias);
+    }
+    if (needsAddressLookup && !bias) {
+      toast.error("Pin your pickup location on the map or allow device location.");
+      return;
+    }
+
+    let resolvedPickup = { latitude: pickupLatitude, longitude: pickupLongitude };
+    try {
+      if ((!resolvedPickup.latitude || !resolvedPickup.longitude) && !pickupPair) {
+        const result = (await geocodeAddress(pickupAddress, bias))[0];
+        if (result) resolvedPickup = { latitude: result.latitude, longitude: result.longitude };
+      }
+    } catch (error) {
+      toast.error(error.message || "Could not locate the entered pickup address.");
+      return;
+    }
+
+    const lat = resolvedPickup.latitude === "" ? pickupPair?.latitude : Number(resolvedPickup.latitude);
+    const lng = resolvedPickup.longitude === "" ? pickupPair?.longitude : Number(resolvedPickup.longitude);
+    if (lat == null || lng == null || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+      toast.error("Pin your pickup location on the map before publishing.");
+      return;
+    }
+
     const safeUntilDate = new Date(Date.now() + Number(expiresInMinutes) * 60000);
 
     setIsSubmitting(true);
@@ -59,18 +154,19 @@ export function DonorForm({ onPostListing, currentUser }) {
         safe_until: safeUntilDate.toISOString(),
         pickup_address: pickupAddress.trim(),
         pickupAddress: pickupAddress.trim(),
+        pickupLatitude: lat,
+        pickupLongitude: lng,
         notes: notes.trim(),
         donor_name: currentUser?.name || "Campus Dining Hall",
         donor_org: currentUser?.org || "Campus Canteen",
       });
 
-      // Clear form
       setTitle("");
       setMeals(30);
       setPickupAddress("");
+      setPickupLatitude("");
+      setPickupLongitude("");
       setNotes("");
-    } catch (err) {
-      // Error handled in hook toast
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +184,7 @@ export function DonorForm({ onPostListing, currentUser }) {
               Post Surplus Food Listing
             </h2>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Alert volunteer couriers and community shelters before safety window lapses
+              Set your pickup location; accepting NGOs set the drop-off location.
             </p>
           </div>
         </div>
@@ -149,6 +245,32 @@ export function DonorForm({ onPostListing, currentUser }) {
           required
         />
 
+        <div className="space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)]/60 p-3">
+          <p className="text-xs font-bold text-[var(--color-forest-text)]">Confirm Donor Pickup Map Pin (required)</p>
+          <p className="text-[11px] text-[var(--color-text-muted)]">
+            Pin the exact pickup spot using GPS or the interactive map. Once posted, any NGO can accept this donation and set their drop-off pin.
+          </p>
+          <div className="location-confirmation">
+            <span>
+              <strong>Pickup pin</strong>
+              {pickupLatitude && pickupLongitude ? `${Number(pickupLatitude).toFixed(4)}, ${Number(pickupLongitude).toFixed(4)}` : "Not set"}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="secondary" onClick={useCurrentLocation}>
+                <LocateFixed className="w-3.5 h-3.5" /> Use My Current Location
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setLocationPickerOpen(true)}>
+                Choose on map
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-subtle)]/40 px-3 py-2.5 flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+          <Building2 className="w-4 h-4 text-[var(--color-leaf-green)] shrink-0" />
+          <span>Drop-off location will be updated automatically once an NGO accepts this donation on the NGO Hub.</span>
+        </div>
+
         <Textarea
           label="Food Safety & Packaging Notes"
           placeholder="e.g., Allergen info, thermal container requirements, contact phone"
@@ -160,13 +282,23 @@ export function DonorForm({ onPostListing, currentUser }) {
         <div className="pt-2 flex items-center justify-between">
           <span className="text-xs text-[var(--color-text-muted)] font-medium flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-[var(--color-leaf-green)]" />
-            <span>Posting instantly notifies online couriers</span>
+            <span>Pickup pin saved with donation</span>
           </span>
           <Button type="submit" variant="primary" loading={isSubmitting}>
             Publish Surplus Listing
           </Button>
         </div>
       </form>
+      {locationPickerOpen && (
+        <CoordinatePicker
+          label="pickup"
+          initialPosition={pickupLatitude && pickupLongitude
+            ? { latitude: Number(pickupLatitude), longitude: Number(pickupLongitude) }
+            : null}
+          onSelect={savePickedLocation}
+          onClose={() => setLocationPickerOpen(false)}
+        />
+      )}
     </Card>
   );
 }

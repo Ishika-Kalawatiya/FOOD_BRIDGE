@@ -62,6 +62,13 @@ export async function authenticate(req, _res, next) {
   }
 }
 
+export function optionalAuthenticate(req, res, next) {
+  if (!req.get("authorization")) {
+    return next();
+  }
+  return authenticate(req, res, next);
+}
+
 /**
  * Enforces role-based permissions.
  * @param  {...string} roles - Allowed roles (e.g. 'donor', 'volunteer', 'ngo')

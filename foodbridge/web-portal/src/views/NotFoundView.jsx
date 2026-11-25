@@ -29,10 +29,10 @@ export function NotFoundView() {
             <span>Return to Homepage</span>
           </Button>
         </Link>
-        <Link to="/portal">
+        <Link to="/#light-your-lantern">
           <Button variant="secondary">
             <LayoutDashboard className="w-4 h-4" />
-            <span>Open Rescue Portal</span>
+            <span>Light Your Lantern</span>
           </Button>
         </Link>
       </div>

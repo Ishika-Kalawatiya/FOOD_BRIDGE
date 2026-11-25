@@ -169,9 +169,18 @@ describe("FoodBridge Hardened API Test Suite", () => {
         title: "Hot Soup & Rice for 45 people",
         meals: 45,
         pickupAddress: "Campus Center East",
+        dropoffAddress: "Hope Shelter, North Campus",
+        pickupLatitude: 12.9716,
+        pickupLongitude: 77.5946,
+        dropoffLatitude: 12.9816,
+        dropoffLongitude: 77.6046,
+        ngoId: 3,
         expiresInMinutes: 90,
       });
     assert.equal(createRes.status, 201);
+    assert.equal(createRes.body.donor.phone, "+91 98765 43210");
+    assert.equal(createRes.body.ngo.phone, "+91 98765 43212");
+    assert.equal(createRes.body.volunteer, null);
     testListingId = createRes.body.id;
 
     // Step 2: Fire 10 concurrent claim requests simultaneously
@@ -189,22 +198,65 @@ describe("FoodBridge Hardened API Test Suite", () => {
 
     assert.equal(successCount, 1, `Expected exactly 1 claim success, got ${successCount}`);
     assert.equal(conflictCount, 9, `Expected exactly 9 claim conflicts (409), got ${conflictCount}`);
+    const claimedByVolunteer = responses.find((response) => response.status === 200);
+    assert.equal(claimedByVolunteer.body.volunteer.phone, "+91 98765 43211");
+
+    const anonymousListings = await request(app).get("/api/listings");
+    const publicListing = anonymousListings.body.data.find((item) => item.id === testListingId);
+    assert.equal(publicListing.donor.phone, null);
+    assert.equal(publicListing.ngo.phone, null);
   });
 
-  test("8. Full Food Rescue Pipeline: Claim -> Collect -> Distribute", async () => {
-    // Current status is 'claimed' from the race test winner
+  test("8. Full Food Rescue Pipeline: Accept -> Pickup -> Delivery -> Distribute", async () => {
+    // Current status is 'accepted' from the race test winner
     // Attempting to distribute before collection fails with 409
     const earlyDistribute = await request(app)
       .post(`/api/listings/${testListingId}/distribute`)
       .set("Authorization", `Bearer ${ngoToken}`);
     assert.equal(earlyDistribute.status, 409);
 
-    // Volunteer collects food
+    // GPS arrival geofence advances the order to Arrived at Pickup.
+    const arrivalRes = await request(app)
+      .post(`/api/listings/${testListingId}/location`)
+      .set("Authorization", `Bearer ${volunteerToken}`)
+      .send({ latitude: 12.9716, longitude: 77.5946 });
+    assert.equal(arrivalRes.status, 200);
+    assert.equal(arrivalRes.body.status, "arrived_at_pickup");
+
+    // Volunteer confirms pickup, then starts the delivery leg.
     const collectRes = await request(app)
       .post(`/api/listings/${testListingId}/collect`)
       .set("Authorization", `Bearer ${volunteerToken}`);
     assert.equal(collectRes.status, 200);
-    assert.equal(collectRes.body.status, "collected");
+    assert.equal(collectRes.body.status, "picked_up");
+
+    const startRes = await request(app)
+      .post(`/api/listings/${testListingId}/start-delivery`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(startRes.status, 200);
+    assert.equal(startRes.body.status, "out_for_delivery");
+
+    const locationRes = await request(app)
+      .post(`/api/listings/${testListingId}/location`)
+      .set("Authorization", `Bearer ${volunteerToken}`)
+      .send({ latitude: 12.9816, longitude: 77.6046 });
+    assert.equal(locationRes.status, 200);
+    assert.equal(locationRes.body.status, "arrived_at_dropoff");
+
+    const trackingRes = await request(app)
+      .get("/api/tracking")
+      .set("Authorization", `Bearer ${donorToken}`);
+    assert.equal(trackingRes.status, 200);
+    assert.ok(trackingRes.body.data.some((delivery) => delivery.id === testListingId && delivery.status === "arrived_at_dropoff"));
+
+    const deliveredRes = await request(app)
+      .post(`/api/listings/${testListingId}/deliver`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(deliveredRes.status, 200);
+    assert.equal(deliveredRes.body.status, "delivered");
+
+    const unauthenticatedTracking = await request(app).get("/api/tracking");
+    assert.equal(unauthenticatedTracking.status, 401);
 
     // NGO distributes food
     const distributeRes = await request(app)
@@ -214,7 +266,189 @@ describe("FoodBridge Hardened API Test Suite", () => {
     assert.equal(distributeRes.body.status, "distributed");
   });
 
-  test("9. Impact Metrics & Canonical Formula Verification", async () => {
+  test("9. Lantern certificates require completed service and can be verified", async () => {
+    const unauthenticated = await request(app)
+      .post("/api/certificates")
+      .send({ name: "Campus Canteen Manager", lanternId: "hope" });
+    assert.equal(unauthenticated.status, 401);
+
+    const mismatchedName = await request(app)
+      .post("/api/certificates")
+      .set("Authorization", `Bearer ${donorToken}`)
+      .send({ name: "Another Person", lanternId: "hope" });
+    assert.equal(mismatchedName.status, 422);
+
+    const issue = (token, name, lanternId) =>
+      request(app)
+        .post("/api/certificates")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name, lanternId });
+
+    const donorCertificate = await issue(donorToken, "Campus Canteen Manager", "hope");
+    assert.equal(donorCertificate.status, 201);
+    assert.equal(donorCertificate.body.verified, true);
+    assert.equal(donorCertificate.body.certificate.role, "donor");
+    assert.equal(donorCertificate.body.certificate.meals, 45);
+
+    const repeatedIssue = await issue(donorToken, "Campus Canteen Manager", "hope");
+    assert.equal(repeatedIssue.body.certificate.id, donorCertificate.body.certificate.id);
+
+    const verification = await request(app).get(`/api/certificates/${donorCertificate.body.certificate.id}`);
+    assert.equal(verification.status, 200);
+    assert.equal(verification.body.verified, true);
+    assert.equal(verification.body.certificate.name, "Campus Canteen Manager");
+
+    const volunteerCertificate = await issue(volunteerToken, "Courier Alex", "kindness");
+    assert.equal(volunteerCertificate.status, 201);
+    assert.equal(volunteerCertificate.body.certificate.role, "volunteer");
+
+    const ngoCertificate = await issue(ngoToken, "Hope Shelter Staff", "community");
+    assert.equal(ngoCertificate.status, 201);
+    assert.equal(ngoCertificate.body.certificate.role, "ngo");
+  });
+
+  test("10. Delivery partner can confirm delivery manually", async () => {
+    const createRes = await request(app)
+      .post("/api/listings")
+      .set("Authorization", `Bearer ${donorToken}`)
+      .send({
+        title: "Manual delivery confirmation batch",
+        meals: 8,
+        pickupAddress: "North campus kitchen",
+        dropoffAddress: "Community shelter entrance",
+        expiresInMinutes: 90,
+      });
+    assert.equal(createRes.status, 201);
+
+    const claimRes = await request(app)
+      .post(`/api/listings/${createRes.body.id}/claim`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(claimRes.status, 200);
+
+    const arrivalRes = await request(app)
+      .post(`/api/listings/${createRes.body.id}/arrive`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(arrivalRes.status, 200);
+
+    const collectRes = await request(app)
+      .post(`/api/listings/${createRes.body.id}/collect`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(collectRes.status, 200);
+
+    const startRes = await request(app)
+      .post(`/api/listings/${createRes.body.id}/start-delivery`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(startRes.status, 200);
+
+    const deliveredRes = await request(app)
+      .post(`/api/listings/${createRes.body.id}/deliver`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(deliveredRes.status, 200);
+    assert.equal(deliveredRes.body.status, "delivered");
+  });
+
+  test("11. GPS geofences require the 40-meter arrival radius", async () => {
+    const createRes = await request(app)
+      .post("/api/listings")
+      .set("Authorization", `Bearer ${donorToken}`)
+      .send({
+        title: "GPS geofence test batch",
+        meals: 4,
+        pickupAddress: "North campus kitchen",
+        dropoffAddress: "Community shelter entrance",
+        pickupLatitude: 12.9716,
+        pickupLongitude: 77.5946,
+        dropoffLatitude: 12.9816,
+        dropoffLongitude: 77.6046,
+        expiresInMinutes: 90,
+      });
+    const id = createRes.body.id;
+    await request(app).post(`/api/listings/${id}/claim`).set("Authorization", `Bearer ${volunteerToken}`);
+
+    const outsidePickupFence = await request(app)
+      .post(`/api/listings/${id}/location`)
+      .set("Authorization", `Bearer ${volunteerToken}`)
+      .send({ latitude: 12.972, longitude: 77.5946 });
+    assert.equal(outsidePickupFence.body.status, "accepted");
+
+    const atPickup = await request(app)
+      .post(`/api/listings/${id}/location`)
+      .set("Authorization", `Bearer ${volunteerToken}`)
+      .send({ latitude: 12.9716, longitude: 77.5946 });
+    assert.equal(atPickup.body.status, "arrived_at_pickup");
+
+    await request(app).post(`/api/listings/${id}/collect`).set("Authorization", `Bearer ${volunteerToken}`);
+    await request(app).post(`/api/listings/${id}/start-delivery`).set("Authorization", `Bearer ${volunteerToken}`);
+
+    const outsideDropoffFence = await request(app)
+      .post(`/api/listings/${id}/location`)
+      .set("Authorization", `Bearer ${volunteerToken}`)
+      .send({ latitude: 12.982, longitude: 77.6046 });
+    assert.equal(outsideDropoffFence.body.status, "out_for_delivery");
+
+    const atDropoff = await request(app)
+      .post(`/api/listings/${id}/location`)
+      .set("Authorization", `Bearer ${volunteerToken}`)
+      .send({ latitude: 12.9816, longitude: 77.6046 });
+    assert.equal(atDropoff.body.status, "arrived_at_dropoff");
+
+    const delivered = await request(app)
+      .post(`/api/listings/${id}/deliver`)
+      .set("Authorization", `Bearer ${volunteerToken}`);
+    assert.equal(delivered.body.status, "delivered");
+  });
+
+  test("12. Map routing defaults to OSRM and requires public-coordinate consent", async () => {
+    const previousUrl = process.env.OSRM_BASE_URL;
+    const previousFetch = global.fetch;
+    delete process.env.OSRM_BASE_URL;
+    let requestedUrl = null;
+    global.fetch = async (input) => {
+      requestedUrl = new URL(input);
+      return {
+        ok: true,
+        json: async () => ({
+          routes: [{
+            geometry: { coordinates: [[77.59, 12.97], [77.6, 12.98]] },
+            distance: 1500,
+            duration: 420,
+            legs: [{
+              distance: 1500,
+              duration: 420,
+              steps: [{ name: "Main Road", distance: 1500, duration: 420, maneuver: { type: "depart" } }],
+            }],
+          }],
+        }),
+      };
+    };
+    try {
+      const payload = { coordinates: [{ latitude: 12.97, longitude: 77.59 }, { latitude: 12.98, longitude: 77.6 }] };
+      const blocked = await request(app)
+        .post("/api/map/route")
+        .set("Authorization", `Bearer ${volunteerToken}`)
+        .send(payload);
+      assert.equal(blocked.status, 428);
+      assert.equal(blocked.body.error.code, "ROUTING_CONSENT_REQUIRED");
+      assert.equal(requestedUrl, null, "must not send coordinates without consent");
+
+      const response = await request(app)
+        .post("/api/map/route")
+        .set("Authorization", `Bearer ${volunteerToken}`)
+        .set("X-Location-Routing-Consent", "public-osrm-v1")
+        .send(payload);
+      assert.equal(response.status, 200);
+      assert.equal(requestedUrl.hostname, "router.project-osrm.org");
+      assert.equal(response.body.route.distance, 1500);
+      assert.equal(response.body.route.duration, 420);
+      assert.equal(response.body.route.steps[0].name, "Main Road");
+    } finally {
+      if (previousUrl === undefined) delete process.env.OSRM_BASE_URL;
+      else process.env.OSRM_BASE_URL = previousUrl;
+      global.fetch = previousFetch;
+    }
+  });
+
+  test("13. Impact Metrics & Canonical Formula Verification", async () => {
     const summary = await request(app).get("/api/impact/summary");
     assert.equal(summary.status, 200);
     assert.ok(typeof summary.body.mealsDiverted === "number");
@@ -228,7 +462,7 @@ describe("FoodBridge Hardened API Test Suite", () => {
     assert.equal(summary.body.co2eKg, expectedCo2e);
   });
 
-  test("10. Community Physical Audit: Bulk Sync & Duplicate Handling", async () => {
+  test("14. Community Physical Audit: Bulk Sync & Duplicate Handling", async () => {
     const sampleRows = [
       {
         audit_date: "2026-11-20",
@@ -272,7 +506,7 @@ describe("FoodBridge Hardened API Test Suite", () => {
     assert.equal(secondSync.body.totalProcessed, 2);
   });
 
-  test("11. Side Game Scores: Isolation from real meal totals", async () => {
+  test("15. Side Game Scores: Isolation from real meal totals", async () => {
     // Record initial platform meals
     const beforeImpact = await request(app).get("/api/impact/summary");
     const platformMealsBefore = beforeImpact.body.mealsDiverted;

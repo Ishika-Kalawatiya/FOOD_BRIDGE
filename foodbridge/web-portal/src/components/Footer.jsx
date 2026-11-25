@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Award, ShieldAlert, Heart, Mail, ExternalLink, Gamepad2, ArrowUpRight } from "lucide-react";
+import { Award, ShieldAlert, Heart, Mail, Flame, ArrowUpRight } from "lucide-react";
 import { Logo } from "./Logo";
 
 export function Footer() {
@@ -18,8 +18,6 @@ export function Footer() {
       }
     }
   }
-
-  const gameUrl = import.meta.env.VITE_GAME_URL || "http://localhost:5173";
 
   return (
     <footer className="bg-[var(--color-bg-surface)] border-t border-[var(--color-border)] pt-12 pb-8 mt-auto font-['Inter']">
@@ -58,7 +56,7 @@ export function Footer() {
               </li>
               <li>
                 <Link to="/courier" className="hover:text-[var(--color-leaf-green)] transition-colors flex items-center gap-1">
-                  <span>Volunteer Courier Board</span>
+                  <span>Delivery Partner Board</span>
                   <ArrowUpRight className="w-3 h-3 opacity-60" />
                 </Link>
               </li>
@@ -69,8 +67,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/portal" className="hover:text-[var(--color-leaf-green)] transition-colors flex items-center gap-1">
-                  <span>Unified Role Portal</span>
+                <Link to="/#light-your-lantern" className="hover:text-[var(--color-leaf-green)] transition-colors flex items-center gap-1">
+                  <span>Light Your Lantern</span>
                   <ArrowUpRight className="w-3 h-3 opacity-60" />
                 </Link>
               </li>
@@ -125,16 +123,14 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a
-                  href={gameUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to="/#light-your-lantern"
                   className="hover:text-[var(--color-tomato-orange)] text-[var(--color-forest-text)] font-semibold flex items-center gap-1.5 transition-colors"
                 >
-                  <Gamepad2 className="w-3.5 h-3.5 text-[var(--color-tomato-orange)]" />
-                  <span>2D Food Rescue Game</span>
-                  <ExternalLink className="w-3 h-3 opacity-60" />
-                </a>
+                  <Flame className="w-3.5 h-3.5 text-[var(--color-tomato-orange)]" />
+                  <span>Light Your Lantern</span>
+                  <ArrowUpRight className="w-3 h-3 opacity-60" />
+                </Link>
               </li>
             </ul>
           </div>
@@ -169,7 +165,7 @@ export function Footer() {
             </span>
             <Link to="/" className="hover:text-[var(--color-leaf-green)]">Home</Link>
             <Link to="/impact" className="hover:text-[var(--color-leaf-green)]">Impact</Link>
-            <Link to="/portal" className="hover:text-[var(--color-leaf-green)]">Dashboard</Link>
+            <Link to="/#light-your-lantern" className="hover:text-[var(--color-leaf-green)]">Light Your Lantern</Link>
           </div>
         </div>
       </div>

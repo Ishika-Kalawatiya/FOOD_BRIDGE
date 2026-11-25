@@ -80,11 +80,16 @@ export async function runSeed() {
         title: "50 Servings Fresh Veg Curry & Rice",
         meals: 50,
         pickup_address: "Student Center Gate 3, Central Campus",
+        dropoff_address: "Hope Community Shelter, Central Campus",
+        pickup_latitude: 12.9716,
+        pickup_longitude: 77.5946,
+        dropoff_latitude: 12.9796,
+        dropoff_longitude: 77.604,
         notes: "Packed in sanitized hot containers. Ready for immediate pickup.",
         expires_at: new Date(now + 130 * 60000), // ~2h 10m
         status: "available",
         volunteer_id: null,
-        ngo_id: null,
+        ngo_id: 3,
         created_at: new Date(now - 15 * 60000),
       },
       {
@@ -93,11 +98,16 @@ export async function runSeed() {
         title: "35 Packets Fresh Sandwiches & Fruit",
         meals: 35,
         pickup_address: "Faculty Club Dining, West Wing",
+        dropoff_address: "Hope Community Shelter, Central Campus",
+        pickup_latitude: 12.9682,
+        pickup_longitude: 77.587,
+        dropoff_latitude: 12.9796,
+        dropoff_longitude: 77.604,
         notes: "Vegetarian and vegan options clearly labeled.",
         expires_at: new Date(now + 65 * 60000), // ~1h 05m
         status: "available",
         volunteer_id: null,
-        ngo_id: null,
+        ngo_id: 3,
         created_at: new Date(now - 30 * 60000),
       },
       {
@@ -106,11 +116,16 @@ export async function runSeed() {
         title: "40 Portions Pasta & Salad Trays",
         meals: 40,
         pickup_address: "Main Kitchen Receiving Dock",
+        dropoff_address: "Hope Community Shelter, Central Campus",
+        pickup_latitude: 12.9716,
+        pickup_longitude: 77.5946,
+        dropoff_latitude: 12.9796,
+        dropoff_longitude: 77.604,
         notes: "Chilled storage. Courier assigned.",
         expires_at: new Date(now + 90 * 60000),
-        status: "claimed",
+        status: "accepted",
         volunteer_id: 2,
-        ngo_id: null,
+        ngo_id: 3,
         created_at: new Date(now - 60 * 60000),
       },
       {
@@ -130,12 +145,17 @@ export async function runSeed() {
 
     for (const l of demoListings) {
       await client.query(
-        `INSERT INTO listings (id, donor_id, title, meals, pickup_address, notes, expires_at, status, volunteer_id, ngo_id, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `INSERT INTO listings (id, donor_id, title, meals, pickup_address, dropoff_address, pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude, notes, expires_at, status, volunteer_id, ngo_id, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          ON CONFLICT (id) DO UPDATE SET
            title = EXCLUDED.title,
            meals = EXCLUDED.meals,
            pickup_address = EXCLUDED.pickup_address,
+           dropoff_address = EXCLUDED.dropoff_address,
+           pickup_latitude = EXCLUDED.pickup_latitude,
+           pickup_longitude = EXCLUDED.pickup_longitude,
+           dropoff_latitude = EXCLUDED.dropoff_latitude,
+           dropoff_longitude = EXCLUDED.dropoff_longitude,
            notes = EXCLUDED.notes,
            expires_at = EXCLUDED.expires_at,
            status = EXCLUDED.status,
@@ -147,6 +167,11 @@ export async function runSeed() {
           l.title,
           l.meals,
           l.pickup_address,
+          l.dropoff_address || null,
+          l.pickup_latitude ?? null,
+          l.pickup_longitude ?? null,
+          l.dropoff_latitude ?? null,
+          l.dropoff_longitude ?? null,
           l.notes,
           l.expires_at,
           l.status,

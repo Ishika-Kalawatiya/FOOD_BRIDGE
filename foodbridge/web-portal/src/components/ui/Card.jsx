@@ -3,8 +3,8 @@ import React from "react";
 export function Card({ children, className = "", hoverable = false, ...props }) {
   return (
     <div
-      className={`bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-5 shadow-[var(--shadow-warm-sm)] transition-all duration-200 ${
-        hoverable ? "hover:shadow-[var(--shadow-warm-md)] hover:-translate-y-0.5" : ""
+      className={`fb-card-3d bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-[var(--radius-lg)] p-5 shadow-[var(--shadow-warm-sm)] transition-all duration-200 ${
+        hoverable ? "fb-card-3d--interactive hover:shadow-[var(--shadow-warm-md)] hover:-translate-y-0.5" : ""
       } ${className}`}
       {...props}
     >

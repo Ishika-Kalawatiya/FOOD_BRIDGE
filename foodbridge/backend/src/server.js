@@ -7,7 +7,8 @@ import path from "path";
 import { validateEnvironment } from "./config/env.js";
 import { pool, checkDbConnection } from "./config/db.js";
 import { AppError, globalErrorHandler } from "./middleware/errors.js";
-import { authenticate, requireRole } from "./middleware/auth.js";
+import { authenticate, optionalAuthenticate, requireRole } from "./middleware/auth.js";
+import { validateBody } from "./middleware/validation.js";
 import {
   signupUser,
   loginUser,
@@ -16,15 +17,29 @@ import {
 } from "./controllers/userController.js";
 import {
   listListings,
+  createListingSchema,
+  deliveryLocationSchema,
+  ngoAcceptSchema,
   createListing,
+  acceptByNgo,
+  notifyVolunteers,
+  listVolunteerAlerts,
   claimListing,
   collectListing,
+  markArrivedAtPickup,
+  startDelivery,
+  markArrivedAtDropoff,
   distributeListing,
+  listDeliveryTracking,
+  updateDeliveryLocation,
+  markListingDelivered,
   cancelListing,
   monthlyImpact,
   pipelineSummary,
   sweepExpiredListings,
 } from "./controllers/listingController.js";
+import { geocodeAddress, getMapTile, getRoadRoute, reverseGeocode } from "./controllers/mapController.js";
+import { issueCertificate, verifyCertificate } from "./controllers/certificateController.js";
 import {
   submitScore,
   getLeaderboard,
@@ -102,12 +117,27 @@ app.get("/api/users/partners", getPartners);
 app.get("/api/users", getPartners); // backwards-compatible safe partner summary
 
 // --- Core Surplus Food Pipeline ---
-app.get("/api/listings", listListings);
-app.post("/api/listings", authenticate, requireRole("donor"), createListing);
+app.get("/api/listings", optionalAuthenticate, listListings);
+app.post("/api/listings", authenticate, requireRole("donor"), validateBody(createListingSchema), createListing);
+app.post("/api/listings/:id/accept-ngo", authenticate, requireRole("ngo"), validateBody(ngoAcceptSchema), acceptByNgo);
+app.post("/api/listings/:id/notify-volunteers", authenticate, requireRole("ngo"), notifyVolunteers);
+app.get("/api/volunteer-alerts", authenticate, requireRole("volunteer"), listVolunteerAlerts);
 app.post("/api/listings/:id/claim", authenticate, requireRole("volunteer"), claimListing);
 app.post("/api/listings/:id/collect", authenticate, requireRole("volunteer"), collectListing);
+app.post("/api/listings/:id/arrive", authenticate, requireRole("volunteer"), markArrivedAtPickup);
+app.post("/api/listings/:id/start-delivery", authenticate, requireRole("volunteer"), startDelivery);
+app.post("/api/listings/:id/arrive-dropoff", authenticate, requireRole("volunteer"), markArrivedAtDropoff);
 app.post("/api/listings/:id/distribute", authenticate, requireRole("ngo"), distributeListing);
 app.post("/api/listings/:id/cancel", authenticate, requireRole("donor"), cancelListing);
+app.get("/api/tracking", authenticate, listDeliveryTracking);
+app.post("/api/listings/:id/location", authenticate, requireRole("volunteer"), validateBody(deliveryLocationSchema), updateDeliveryLocation);
+app.post("/api/listings/:id/deliver", authenticate, requireRole("volunteer"), markListingDelivered);
+app.get("/api/map/geocode", authenticate, geocodeAddress);
+app.get("/api/map/reverse", authenticate, reverseGeocode);
+app.post("/api/map/route", authenticate, getRoadRoute);
+app.get("/api/map/tiles/:z/:x/:y", getMapTile);
+app.post("/api/certificates", authenticate, issueCertificate);
+app.get("/api/certificates/:certificateId", verifyCertificate);
 
 // --- Impact Metrics ---
 app.get("/api/impact/summary", pipelineSummary);

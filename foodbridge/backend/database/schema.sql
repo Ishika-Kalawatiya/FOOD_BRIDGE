@@ -43,15 +43,43 @@ CREATE TABLE IF NOT EXISTS listings (
   title            VARCHAR(80) NOT NULL,
   meals            INTEGER NOT NULL CHECK (meals > 0),
   pickup_address   VARCHAR(160) NOT NULL,
+  dropoff_address  VARCHAR(160),
+  pickup_latitude  DOUBLE PRECISION,
+  pickup_longitude DOUBLE PRECISION,
+  dropoff_latitude DOUBLE PRECISION,
+  dropoff_longitude DOUBLE PRECISION,
+  volunteer_latitude DOUBLE PRECISION,
+  volunteer_longitude DOUBLE PRECISION,
+  volunteer_location_updated_at TIMESTAMPTZ,
   notes            TEXT,
   expires_at       TIMESTAMPTZ NOT NULL,
-  status           VARCHAR(12) NOT NULL DEFAULT 'available'
-                   CHECK (status IN ('available','claimed','collected','distributed')),
+  status           VARCHAR(24) NOT NULL DEFAULT 'available'
+                   CHECK (status IN ('available','accepted','arrived_at_pickup','picked_up','out_for_delivery','arrived_at_dropoff','delivered','distributed','expired','cancelled')),
   volunteer_id     INTEGER REFERENCES users(id),
   ngo_id           INTEGER REFERENCES users(id),
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   claimed_at       TIMESTAMPTZ,
   collected_at     TIMESTAMPTZ,
-  distributed_at   TIMESTAMPTZ
+  arrived_at_pickup_at TIMESTAMPTZ,
+  arrived_at_dropoff_at TIMESTAMPTZ,
+  out_for_delivery_at TIMESTAMPTZ,
+  distributed_at   TIMESTAMPTZ,
+  delivered_at     TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_listings_status ON listings (status, expires_at);
+
+CREATE TABLE IF NOT EXISTS service_certificates (
+  certificate_id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_name VARCHAR(100) NOT NULL,
+  role VARCHAR(10) NOT NULL CHECK (role IN ('donor', 'volunteer', 'ngo')),
+  lantern_id VARCHAR(40) NOT NULL,
+  listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE RESTRICT,
+  listing_title VARCHAR(160) NOT NULL,
+  meals INTEGER NOT NULL CHECK (meals > 0),
+  issued_at TIMESTAMPTZ NOT NULL,
+  signature CHAR(64) NOT NULL,
+  UNIQUE (user_id, lantern_id)
+);
+CREATE INDEX IF NOT EXISTS idx_service_certificates_listing
+  ON service_certificates (listing_id);

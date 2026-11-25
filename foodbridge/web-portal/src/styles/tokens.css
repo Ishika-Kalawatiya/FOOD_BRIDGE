@@ -69,6 +69,35 @@
   --header-height: 4.5rem;
 }
 
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surface & Backgrounds */
+  --color-bg-cream: #101914;
+  --color-bg-surface: #17241d;
+  --color-bg-subtle: #1e2f26;
+  --color-bg-card: #17241d;
+  --color-bg-elevated: #213429;
+
+  /* Leaf Green */
+  --color-leaf-green: #4fa36b;
+  --color-leaf-green-light: #6ec089;
+  --color-leaf-green-dark: #2f5d3a;
+  --color-leaf-green-alpha: rgba(79, 163, 107, 0.2);
+
+  /* Forest Text & Legibility */
+  --color-forest-text: #eef6f0;
+  --color-text-muted: #a6beb0;
+  --color-text-light: #7c9687;
+  --color-border: #2c4336;
+  --color-border-focus: #4fa36b;
+
+  /* Shadows */
+  --shadow-warm-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-warm-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-warm-lg: 0 14px 40px rgba(0, 0, 0, 0.55);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

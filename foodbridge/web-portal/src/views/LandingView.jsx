@@ -30,6 +30,7 @@ import { useToast } from "../components/ui/Toast";
 import { LandingHeroStats } from "./landing/LandingHeroStats";
 import { LandingImpactCalculator } from "./landing/LandingImpactCalculator";
 import { LandingFaqAccordion } from "./landing/LandingFaqAccordion";
+import { LightYourLantern } from "../components/LightYourLantern";
 
 export function LandingView({
   totalDivertedMeals = 0,
@@ -358,6 +359,12 @@ export function LandingView({
       {/* =========================================================================
           SECTION 3: HOW IT WORKS & TIMER LEGEND
           ========================================================================= */}
+      <LightYourLantern
+        currentUser={currentUser}
+        activeRole={activeRole}
+        openAuthModal={openAuthModal}
+      />
+
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)] uppercase tracking-wider">

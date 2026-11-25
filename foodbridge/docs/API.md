@@ -22,7 +22,7 @@
 3. **Transition Response Shapes**:
    - `POST /api/listings/:id/claim`, `/collect`, `/distribute` previously returned `{ ok: true }`. They now return the **full updated Listing resource** (`{ id, title, meals, status, ... }`).
 4. **Impact Calculation & Definitions**:
-   - **"Meals Diverted" Definition**: A meal is officially counted as diverted from waste once it is physically collected by a volunteer courier from the donor facility (`status IN ('collected', 'distributed')`). Unclaimed listings and listings expired prior to collection are never counted.
+   - **"Meals Diverted" Definition**: A meal is counted once pickup is confirmed (`status IN ('picked_up', 'out_for_delivery', 'delivered', 'distributed')`). Unclaimed listings and listings expired prior to collection are never counted.
    - Environmental factors are computed canonically by the backend:
      - `waste_kg = meals * 0.40` (Assumes ~0.4 kg edible portions per meal)
      - `co2e_kg = waste_kg * 2.50` (FAO-derived factor of ~2.5 kg CO2e per kg food waste)
@@ -34,7 +34,8 @@
    - `GET /api/users` is restricted. To fetch current profile, use `GET /api/users/me`.
 7. **Listing Expiry & Claim Abandonment**:
    - When a listing passes `expires_at` while `status = 'available'`, it is marked `'expired'`.
-   - When a listing passes `expires_at` while `status = 'claimed'` but **not collected**, it is automatically transitioned to `'expired'`, courier assignment is revoked, and the food is retired to guarantee food safety.
+   - Accepted and not-yet-collected listings that pass `expires_at` are automatically transitioned to `'expired'` and courier assignment is revoked.
+8. **Delivery Lifecycle**: `available -> accepted -> arrived_at_pickup -> picked_up -> out_for_delivery -> arrived_at_dropoff -> delivered`. Pickup and drop-off geofences use a 40-meter radius; the courier confirms final delivery manually.
 
 ---
 
@@ -139,7 +140,7 @@ Retrieves current authenticated profile.
 Returns active and historical surplus listings.
 
 **Query Parameters**:
-- `status` (optional): `available`, `claimed`, `collected`, `distributed`, `expired`, `cancelled`
+- `status` (optional): `available`, `accepted`, `arrived_at_pickup`, `picked_up`, `out_for_delivery`, `arrived_at_dropoff`, `delivered`, `distributed`, `expired`, `cancelled`
 - `limit` (optional, default: 50, max: 100)
 - `offset` (optional, default: 0)
 
@@ -160,7 +161,8 @@ Returns active and historical surplus listings.
       "donor": {
         "id": 1,
         "name": "Campus Canteen Manager",
-        "org": "Green Valley Dining Hall"
+        "org": "Green Valley Dining Hall",
+        "phone": null
       },
       "volunteer": null,
       "ngo": null,
@@ -176,6 +178,8 @@ Returns active and historical surplus listings.
 }
 ```
 
+Phone numbers are included only for authenticated listing participants (the donor, assigned volunteer, or selected recipient NGO). Anonymous responses omit contact numbers.
+
 ---
 
 ### 3.2 POST /api/listings
@@ -189,6 +193,8 @@ Creates a new surplus batch.
   "title": "40 Servings Rice & Dal",
   "meals": 40,
   "pickupAddress": "Hostel 3 Kitchen Dock",
+  "dropoffAddress": "Hope Community Shelter",
+  "ngoId": 3,
   "notes": "Chilled, ready for bicycle or van transport",
   "expiresInMinutes": 120
 }
@@ -205,28 +211,34 @@ Volunteer courier reserves a batch for delivery.
 **Headers**: `Authorization: Bearer <token>` (Must have role: `volunteer`)
 
 **Success Response `200 OK`**:
-Returns the complete updated `Listing` resource with `status: "claimed"`, `volunteerId`, and `claimedAt`.
+Returns the complete updated `Listing` resource with `status: "accepted"`, `volunteerId`, and `claimedAt`.
 
 **Errors**:
 - `409`: `{ "error": { "code": "ALREADY_CLAIMED", "message": "This listing has already been claimed or has expired." } }`
 
 ---
 
-### 3.4 POST /api/listings/:id/collect
-Volunteer confirms physical pickup from donor kitchen.
+### 3.4 POST /api/listings/:id/arrive
+Assigned volunteer confirms arrival when GPS geofencing is unavailable. GPS updates within 40 meters advance to the same status automatically.
 
 **Headers**: `Authorization: Bearer <token>` (Must have role: `volunteer`, must be the claiming volunteer)
 
 **Success Response `200 OK`**:
-Returns the updated `Listing` resource with `status: "collected"` and `collectedAt`.
+Returns `{ "id": 1, "status": "arrived_at_pickup", "arrived_at_pickup_at": "..." }`.
 
-**Errors**:
-- `403`: `{ "error": { "code": "NOT_OWNER", "message": "Only the courier who claimed this delivery can mark it collected." } }`
-- `409`: `{ "error": { "code": "INVALID_STATE", "message": "Listing must be claimed before it can be collected." } }`
+### 3.5 POST /api/listings/:id/collect
+Assigned volunteer confirms physical pickup after arrival. Returns the updated listing with `status: "picked_up"`.
 
----
+### 3.6 POST /api/listings/:id/start-delivery
+Assigned volunteer starts the drop-off leg after pickup confirmation. Returns `status: "out_for_delivery"`.
 
-### 3.5 POST /api/listings/:id/distribute
+### 3.7 POST /api/listings/:id/arrive-dropoff
+Assigned volunteer confirms arrival when GPS is unavailable. GPS updates within 40 meters advance to `arrived_at_dropoff`.
+
+### 3.8 POST /api/listings/:id/deliver
+Assigned volunteer confirms final handoff after arrival (or directly while en route as a manual fallback). Returns `status: "delivered"`.
+
+### 3.9 POST /api/listings/:id/distribute
 Shelter / NGO confirms meal receipt.
 
 **Headers**: `Authorization: Bearer <token>` (Must have role: `ngo`)
@@ -236,7 +248,7 @@ Returns the updated `Listing` resource with `status: "distributed"`, `ngoId`, an
 
 ---
 
-### 3.6 POST /api/listings/:id/cancel
+### 3.10 POST /api/listings/:id/cancel
 Donor cancels an unclaimed surplus posting.
 
 **Headers**: `Authorization: Bearer <token>` (Must have role: `donor`, must be posting owner)
@@ -248,6 +260,16 @@ Returns the updated `Listing` resource with `status: "cancelled"`.
 - `409`: `{ "error": { "code": "CANNOT_CANCEL", "message": "Cannot cancel a listing that is already claimed or collected." } }`
 
 ---
+
+### 3.11 Delivery tracking and map services
+
+- `GET /api/tracking` returns role-scoped courier GPS/status data for authenticated users.
+- `POST /api/listings/:id/location` accepts authenticated courier coordinates and automatically advances pickup/drop-off geofences.
+- `POST /api/map/route` defaults to `https://router.project-osrm.org`; set `OSRM_BASE_URL` to override the API-side route service. The portal may instead use `VITE_OSRM_BASE_URL` for a direct browser-side override.
+- Public routing requires `X-Location-Routing-Consent: public-osrm-v1`. The portal asks once before sending pickup, drop-off, or rider coordinates to the public provider and remembers the choice in local storage. Private/local OSRM deployments do not require that header.
+- `GET /api/map/geocode` and `GET /api/map/reverse` use the self-hosted Nominatim service configured by `NOMINATIM_BASE_URL`; those endpoints have no public default.
+- The portal uses OpenStreetMap street tiles by default; `VITE_MAP_TILES_URL` can override the tile template. A private tile server can be proxied through `GET /api/map/tiles/:z/:x/:y` with `MAP_TILES_BASE_URL`.
+- The public OSRM service is suitable for development demos; production deployments should use a managed or self-hosted router and observe provider terms and usage limits.
 
 ## 4. Impact & Community Audit Endpoints
 

@@ -181,7 +181,7 @@ export function AuthModal({ isOpen, onClose, options = {} }) {
         {tab === "quick" ? (
           <div className="space-y-2.5 pt-1">
             <p className="text-xs text-[var(--color-text-muted)]">
-              Choose a pre-configured role to immediately test real donor listings, volunteer pickups, and shelter receipts:
+              Choose a pre-configured role to immediately test donor listings, delivery partner pickups, and shelter receipts:
             </p>
             {demoAccounts.map((acc) => (
               <button
@@ -196,7 +196,7 @@ export function AuthModal({ isOpen, onClose, options = {} }) {
                     {acc.name}
                   </div>
                   <div className="text-xs text-[var(--color-text-muted)]">
-                    {acc.org} &bull; <span className="capitalize font-semibold text-[var(--color-leaf-green)]">{acc.role}</span>
+                    {acc.org} &bull; <span className="font-semibold text-[var(--color-leaf-green)]">{acc.role === "volunteer" ? "Delivery Partner" : acc.role}</span>
                   </div>
                 </div>
                 <div className="px-2 py-1 rounded-full text-[11px] font-bold bg-[var(--color-leaf-green-alpha)] text-[var(--color-leaf-green)]">
@@ -243,7 +243,7 @@ export function AuthModal({ isOpen, onClose, options = {} }) {
                   onChange={(e) => setRole(e.target.value)}
                 >
                   <option value="donor">Food Donor (Canteen / Restaurant / Hostel)</option>
-                  <option value="volunteer">Volunteer Courier (Pickup &amp; Deliver)</option>
+                  <option value="volunteer">Delivery Partner (Pickup &amp; Deliver)</option>
                   <option value="ngo">NGO Shelter Hub (Recipient Kitchen)</option>
                 </Select>
 
@@ -255,7 +255,9 @@ export function AuthModal({ isOpen, onClose, options = {} }) {
                 />
 
                 <Input
-                  label="Phone Number (Optional)"
+                  label="Phone Number for Handoffs (Optional)"
+                  type="tel"
+                  autoComplete="tel"
                   placeholder="e.g. +91 98765 43210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}

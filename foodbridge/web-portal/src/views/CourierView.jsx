@@ -7,16 +7,17 @@ import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
 
-export function CourierView({ listings, onAction }) {
+export function CourierView({ listings, onAction, onOpenMap }) {
   const { currentUser, activeRole, setActiveRole } = useAuth();
   const [filter, setFilter] = useState("available"); // "available" | "my_pickups" | "all"
 
   const isVolunteer = activeRole === "volunteer";
 
   const availableListings = listings.filter((l) => l.status === "available");
-  const myPickups = listings.filter((l) => l.status === "claimed");
-  const inTransit = listings.filter((l) => l.status === "collected");
-  const completed = listings.filter((l) => l.status === "distributed");
+  const myPickups = listings.filter((l) => ["accepted", "arrived_at_pickup"].includes(l.status));
+  const inTransit = listings.filter((l) => ["picked_up", "out_for_delivery", "arrived_at_dropoff"].includes(l.status));
+  const completed = listings.filter((l) => l.status === "delivered" || l.status === "distributed");
+  const deliveredMealsCount = completed.reduce((sum, l) => sum + (Number(l.meals) || 0), 0);
 
   const displayedListings =
     filter === "available"
@@ -32,14 +33,14 @@ export function CourierView({ listings, onAction }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-['Quicksand'] bg-[var(--color-mustard-alpha)] text-[var(--color-mustard-dark)]">
-              Volunteer Courier Network
+              Delivery Partner Network
             </span>
           </div>
           <h1 className="font-['Fraunces'] text-2xl sm:text-3xl font-extrabold text-[var(--color-forest-text)]">
-            Urgent Pickup &amp; Transit Board
+            Delivery Partner Dispatch Board
           </h1>
           <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1">
-            Claim nearby campus food surplus, confirm collection at the kitchen dock, and deliver to community shelters.
+            Accept nearby food pickups, confirm collection at the kitchen dock, and deliver to community shelters.
           </p>
         </div>
 
@@ -50,7 +51,7 @@ export function CourierView({ listings, onAction }) {
             onClick={() => setActiveRole("volunteer")}
             className="self-start sm:self-auto font-bold"
           >
-            Switch to Courier Mode
+            Switch to Delivery Partner Mode
           </Button>
         )}
       </div>
@@ -69,7 +70,7 @@ export function CourierView({ listings, onAction }) {
 
         <Card className="p-4 bg-[var(--color-bg-surface)] border-[var(--color-border)]">
           <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
-            Claimed / En Route
+            Accepted / En Route
           </div>
           <div className="font-['Fraunces'] text-2xl sm:text-3xl font-bold text-[var(--color-mustard-dark)]">
             {myPickups.length}
@@ -79,7 +80,7 @@ export function CourierView({ listings, onAction }) {
 
         <Card className="p-4 bg-[var(--color-bg-surface)] border-[var(--color-border)]">
           <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
-            Collected / In Transit
+            Picked Up / In Transit
           </div>
           <div className="font-['Fraunces'] text-2xl sm:text-3xl font-bold text-purple-700">
             {inTransit.length}
@@ -89,12 +90,12 @@ export function CourierView({ listings, onAction }) {
 
         <Card className="p-4 bg-[var(--color-bg-surface)] border-[var(--color-border)]">
           <div className="text-xs font-bold font-['Quicksand'] text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
-            Completed Rescues
+            Meals Delivered
           </div>
           <div className="font-['Fraunces'] text-2xl sm:text-3xl font-bold text-emerald-800">
-            {completed.length}
+            {deliveredMealsCount.toLocaleString()}
           </div>
-          <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">Delivered to shelters</div>
+          <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{completed.length} orders delivered</div>
         </Card>
       </div>
 
@@ -142,7 +143,7 @@ export function CourierView({ listings, onAction }) {
           message={
             filter === "available"
               ? "All current campus food surplus batches have been claimed by couriers. Check back when dining halls finish dinner service!"
-              : "You have no claimed pickups awaiting collection right now. Check the 'Available for Pickup' tab to claim one!"
+              : "You have no active deliveries awaiting pickup. Check the 'Available for Pickup' tab to accept one!"
           }
         />
       ) : (
@@ -154,6 +155,7 @@ export function CourierView({ listings, onAction }) {
               activeRole="volunteer"
               currentUser={currentUser}
               onAction={onAction}
+              onOpenMap={onOpenMap}
             />
           ))}
         </div>

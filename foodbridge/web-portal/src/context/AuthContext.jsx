@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { SEED_USERS, loginUser as apiLoginUser, registerUser as apiRegisterUser } from "../services/api";
+import { loginUser as apiLoginUser, registerUser as apiRegisterUser } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -9,8 +9,7 @@ export function AuthProvider({ children }) {
       const stored = localStorage.getItem("fb_user");
       if (stored) return JSON.parse(stored);
     } catch (_e) {}
-    // Default to initial seed donor
-    return SEED_USERS.donor;
+    return null;
   });
 
   const [activeRole, setActiveRole] = useState(() => {
@@ -58,9 +57,6 @@ export function AuthProvider({ children }) {
   function switchRole(roleKey) {
     setActiveRole(roleKey);
     localStorage.setItem("fb_user_role", roleKey);
-    if (SEED_USERS[roleKey]) {
-      setCurrentUser(SEED_USERS[roleKey]);
-    }
   }
 
   async function login(credentials) {
@@ -68,6 +64,13 @@ export function AuthProvider({ children }) {
     const user = res.user || res;
     if (res.token) {
       localStorage.setItem("fb_token", res.token);
+    } else {
+      localStorage.removeItem("fb_token");
+    }
+    localStorage.setItem("fb_user", JSON.stringify(user));
+    localStorage.setItem("fb_user_id", String(user.id));
+    if (user.role) {
+      localStorage.setItem("fb_user_role", user.role);
     }
     setCurrentUser(user);
     if (user.role) {
@@ -82,6 +85,11 @@ export function AuthProvider({ children }) {
     const user = res.user || res;
     if (res.token) {
       localStorage.setItem("fb_token", res.token);
+    }
+    localStorage.setItem("fb_user", JSON.stringify(user));
+    localStorage.setItem("fb_user_id", String(user.id));
+    if (user.role) {
+      localStorage.setItem("fb_user_role", user.role);
     }
     setCurrentUser(user);
     if (user.role) {
