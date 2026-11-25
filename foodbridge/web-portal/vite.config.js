@@ -7,9 +7,20 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5174,
+    host: true,
     proxy: {
       "/api": {
-        target: "http://localhost:4000",
+        target: "http://127.0.0.1:4000",
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    port: 4173,
+    host: true,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:4000",
         changeOrigin: true,
       },
     },
@@ -18,11 +29,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        donate: resolve(__dirname, "donate.html"),
-        courier: resolve(__dirname, "courier.html"),
-        ngoHub: resolve(__dirname, "ngo-hub.html"),
-        portal: resolve(__dirname, "portal.html"),
-        app: resolve(__dirname, "app.html"),
       },
     },
   },
