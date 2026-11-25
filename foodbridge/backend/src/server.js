@@ -172,6 +172,7 @@ const port = Number(process.env.PORT) || 4000;
 let server;
 
 export { app, server };
+export default app;
 
 export async function startServer() {
   await checkDbConnection().catch(() => {});
