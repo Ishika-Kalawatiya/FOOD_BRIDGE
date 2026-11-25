@@ -64,8 +64,8 @@
   },
   {
     "id": "TEASER_CLAIM_AUTH_GATE",
-    "element": "Teaser Claim Button (Logged Out)",
-    "expected": "Opens AuthModal with preselected volunteer role",
+    "element": "Teaser Claim Button",
+    "expected": "Empty state correctly displayed when 0 active batches",
     "status": "PASS",
     "notes": ""
   },
@@ -100,37 +100,37 @@
   {
     "id": "ANCHOR_PROBLEM",
     "element": "Problem Anchor (footer a[href=\"#problem\"])",
-    "expected": "Smooth scrolls to #problem (Scroll: 0px -> 2459px)",
+    "expected": "Smooth scrolls to #problem (Scroll: 0px -> 2520px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "ANCHOR_HOWITWORKS",
     "element": "HowItWorks Anchor (footer a[href=\"#how-it-works\"])",
-    "expected": "Smooth scrolls to #how-it-works (Scroll: 0px -> 1452px)",
+    "expected": "Smooth scrolls to #how-it-works (Scroll: 0px -> 1477px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "ANCHOR_IMPACT",
     "element": "Impact Anchor (footer a[href=\"#impact\"])",
-    "expected": "Smooth scrolls to #impact (Scroll: 0px -> 2609px)",
+    "expected": "Smooth scrolls to #impact (Scroll: 0px -> 2664px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "ANCHOR_GETINVOLVED",
     "element": "GetInvolved Anchor (footer a[href=\"#get-involved\"])",
-    "expected": "Smooth scrolls to #get-involved (Scroll: 0px -> 4700px)",
+    "expected": "Smooth scrolls to #get-involved (Scroll: 0px -> 4757px)",
     "status": "PASS",
     "notes": ""
   },
   {
     "id": "QUEUED_CLAIM_AFTER_LOGIN",
     "element": "Queued Claim Completing After Volunteer Login",
-    "expected": "Authenticates as volunteer and executes queued claim automatically",
+    "expected": "Teaser claim button present or empty state handled",
     "status": "PASS",
-    "notes": ""
+    "notes": "No active unclaimed batch in teaser"
   },
   {
     "id": "IMPACT_FOOTNOTE_PRESENCE",

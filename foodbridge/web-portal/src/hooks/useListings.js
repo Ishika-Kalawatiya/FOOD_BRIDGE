@@ -5,6 +5,7 @@ import {
   claimListing as apiClaimListing,
   collectListing as apiCollectListing,
   distributeListing as apiDistributeListing,
+  cancelListing as apiCancelListing,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ui/Toast";
@@ -31,15 +32,46 @@ export function useListings(pollIntervalMs = 20000) {
     }
   }, []);
 
-  // Initial load and periodic polling
+  // Initial load and visibility-aware periodic polling
   useEffect(() => {
     loadListings();
-    if (pollIntervalMs > 0) {
-      const interval = setInterval(() => {
-        loadListings(true);
-      }, pollIntervalMs);
-      return () => clearInterval(interval);
+    if (pollIntervalMs <= 0) return;
+
+    let interval = null;
+
+    function startPolling() {
+      if (!interval) {
+        interval = setInterval(() => {
+          if (!document.hidden) {
+            loadListings(true);
+          }
+        }, pollIntervalMs);
+      }
     }
+
+    function stopPolling() {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        loadListings(true);
+        startPolling();
+      }
+    }
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadListings, pollIntervalMs]);
 
   // Actions
@@ -91,6 +123,18 @@ export function useListings(pollIntervalMs = 20000) {
     }
   };
 
+  const cancel = async (id) => {
+    try {
+      const updated = await apiCancelListing(id, currentUser);
+      toast.success("Listing cancelled successfully.");
+      await loadListings(true);
+      return updated;
+    } catch (err) {
+      toast.error(err.message || "Could not cancel listing.");
+      throw err;
+    }
+  };
+
   // Filtered views
   const now = Date.now();
   const availableListings = listings.filter((l) => {
@@ -103,6 +147,8 @@ export function useListings(pollIntervalMs = 20000) {
   const claimedListings = listings.filter((l) => l.status === "claimed");
   const collectedListings = listings.filter((l) => l.status === "collected");
   const distributedListings = listings.filter((l) => l.status === "distributed");
+  const cancelledListings = listings.filter((l) => l.status === "cancelled");
+  const expiredListings = listings.filter((l) => l.status === "expired");
 
   const totalDivertedMeals = listings
     .filter((l) => l.status === "collected" || l.status === "distributed")
@@ -117,10 +163,13 @@ export function useListings(pollIntervalMs = 20000) {
     claim,
     collect,
     distribute,
+    cancel,
     availableListings,
     claimedListings,
     collectedListings,
     distributedListings,
+    cancelledListings,
+    expiredListings,
     totalDivertedMeals,
   };
 }

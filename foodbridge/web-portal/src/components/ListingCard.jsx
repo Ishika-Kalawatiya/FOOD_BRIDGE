@@ -33,6 +33,10 @@ export function ListingCard({ listing, activeRole, currentUser, onAction }) {
         return <Badge variant="mango">Collected &bull; Transit</Badge>;
       case "distributed":
         return <Badge variant="success">Distributed &bull; Delivered</Badge>;
+      case "cancelled":
+        return <Badge variant="neutral">Cancelled</Badge>;
+      case "expired":
+        return <Badge variant="danger">Expired</Badge>;
       default:
         return <Badge variant="neutral">{listing.status}</Badge>;
     }
@@ -145,10 +149,39 @@ export function ListingCard({ listing, activeRole, currentUser, onAction }) {
           </div>
         )}
 
-        {/* If user is donor or viewing completed */}
-        {activeRole === "donor" && (isAvailable || isClaimed) && (
+        {/* If user is donor */}
+        {activeRole === "donor" && isAvailable && (
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">
+              Awaiting courier claim
+            </span>
+            <Button
+              variant="outline"
+              size="xs"
+              loading={loading}
+              onClick={() => handleActionClick("cancel")}
+              className="text-red-700 border-red-200 hover:bg-red-50 text-[11px] py-1 px-2.5 font-bold"
+            >
+              Cancel Batch
+            </Button>
+          </div>
+        )}
+
+        {activeRole === "donor" && isClaimed && (
           <div className="text-center text-[11px] font-semibold text-[var(--color-text-muted)] py-1">
-            {isAvailable ? "Awaiting courier claim" : "Courier en route to collect"}
+            Courier en route to collect
+          </div>
+        )}
+
+        {listing.status === "cancelled" && (
+          <div className="text-center py-1.5 text-xs font-semibold text-stone-500 bg-stone-100 rounded-[var(--radius-sm)] border border-stone-200">
+            Cancelled by Donor
+          </div>
+        )}
+
+        {listing.status === "expired" && (
+          <div className="text-center py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 rounded-[var(--radius-sm)] border border-rose-200">
+            Expired past safe consumption window
           </div>
         )}
       </div>

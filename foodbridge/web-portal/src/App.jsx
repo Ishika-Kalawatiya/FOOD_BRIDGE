@@ -56,7 +56,7 @@ function ScrollHandler() {
 
 function MainAppContent() {
   const { currentUser, activeRole, setActiveRole, authModalOpen, authModalOptions, openAuthModal, closeAuthModal, logout } = useAuth();
-  const { listings, loading, refresh, addListing, claim, collect, distribute, totalDivertedMeals, availableListings } = useListings();
+  const { listings, loading, refresh, addListing, claim, collect, distribute, cancel, totalDivertedMeals, availableListings } = useListings();
 
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [impactData, setImpactData] = useState(null);
@@ -84,6 +84,7 @@ function MainAppContent() {
     if (actionType === "claim") return claim(id);
     if (actionType === "collect") return collect(id);
     if (actionType === "distribute") return distribute(id);
+    if (actionType === "cancel") return cancel(id);
   };
 
   return (

@@ -169,23 +169,42 @@ export async function checkBackendHealth() {
  */
 export async function apiCall(path, { method = "GET", body, userId } = {}) {
   const currentUserId = userId || localStorage.getItem("fb_user_id") || "1";
+  const token = localStorage.getItem("fb_token");
 
   try {
+    const headers = {
+      "Content-Type": "application/json",
+      "x-user-id": String(currentUserId),
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_BASE}${path}`, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        "x-user-id": String(currentUserId),
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
 
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const err = new Error(data.error || `Request failed with status ${res.status}`);
+      const message =
+        typeof data.error === "object"
+          ? data.error?.message || "Operation failed."
+          : data.error || data.message || `Request failed with status ${res.status}`;
+      const err = new Error(message);
       err.status = res.status;
+      err.code = data.error?.code || data.code;
+      err.details = data.error?.details || data.details;
       err.data = data;
+
+      // Handle token expiration or unauthorized sessions
+      if (res.status === 401 && (err.code === "TOKEN_EXPIRED" || err.code === "UNAUTHENTICATED")) {
+        localStorage.removeItem("fb_token");
+        window.dispatchEvent(new CustomEvent("foodbridge:session-expired", { detail: { message } }));
+      }
+
       // Real backend response (4xx/5xx) -> not demo mode
       setDemoMode(false);
       throw err;
@@ -285,6 +304,16 @@ function handleLocalMockApi(path, method, body, userId) {
     item.ngo_id = Number(userId) || 3;
     item.ngo_org = "Hope Community Shelter";
     item.distributed_at = new Date().toISOString();
+    setStoredListings(listings);
+    return item;
+  }
+
+  // POST /api/listings/:id/cancel
+  if (path.match(/\/api\/listings\/\d+\/cancel/) && method === "POST") {
+    const id = Number(path.split("/")[3]);
+    const item = listings.find((l) => l.id === id);
+    if (!item) throw new Error("Listing not found");
+    item.status = "cancelled";
     setStoredListings(listings);
     return item;
   }
@@ -398,6 +427,13 @@ export async function distributeListing(id, user) {
   return apiCall(`/api/listings/${id}/distribute`, {
     method: "POST",
     userId: user?.id || 3,
+  });
+}
+
+export async function cancelListing(id, user) {
+  return apiCall(`/api/listings/${id}/cancel`, {
+    method: "POST",
+    userId: user?.id || 1,
   });
 }
 

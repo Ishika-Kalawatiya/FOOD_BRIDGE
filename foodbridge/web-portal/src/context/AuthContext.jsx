@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { SEED_USERS, loginUser as apiLoginUser } from "../services/api";
+import { SEED_USERS, loginUser as apiLoginUser, registerUser as apiRegisterUser } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -30,6 +30,7 @@ export function AuthProvider({ children }) {
     setAuthModalOptions({});
   }
 
+  // Synchronize localStorage
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem("fb_user", JSON.stringify(currentUser));
@@ -39,8 +40,20 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("fb_user");
       localStorage.removeItem("fb_user_id");
       localStorage.removeItem("fb_user_role");
+      localStorage.removeItem("fb_token");
     }
   }, [currentUser, activeRole]);
+
+  // Session expiration listener
+  useEffect(() => {
+    function handleSessionExpired(event) {
+      setCurrentUser(null);
+      localStorage.removeItem("fb_token");
+      openAuthModal({ message: event.detail?.message || "Your session has expired. Please sign in again." });
+    }
+    window.addEventListener("foodbridge:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("foodbridge:session-expired", handleSessionExpired);
+  }, []);
 
   function switchRole(roleKey) {
     setActiveRole(roleKey);
@@ -51,7 +64,25 @@ export function AuthProvider({ children }) {
   }
 
   async function login(credentials) {
-    const user = await apiLoginUser(credentials);
+    const res = await apiLoginUser(credentials);
+    const user = res.user || res;
+    if (res.token) {
+      localStorage.setItem("fb_token", res.token);
+    }
+    setCurrentUser(user);
+    if (user.role) {
+      setActiveRole(user.role);
+    }
+    setAuthModalOpen(false);
+    return user;
+  }
+
+  async function signup(userData) {
+    const res = await apiRegisterUser(userData);
+    const user = res.user || res;
+    if (res.token) {
+      localStorage.setItem("fb_token", res.token);
+    }
     setCurrentUser(user);
     if (user.role) {
       setActiveRole(user.role);
@@ -64,6 +95,8 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
     localStorage.removeItem("fb_user");
     localStorage.removeItem("fb_user_id");
+    localStorage.removeItem("fb_user_role");
+    localStorage.removeItem("fb_token");
   }
 
   return (
@@ -78,6 +111,7 @@ export function AuthProvider({ children }) {
         openAuthModal,
         closeAuthModal,
         login,
+        signup,
         logout,
       }}
     >
